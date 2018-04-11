@@ -16,6 +16,9 @@ class BaseTrain:
             self.train_epoch()
             self.sess.run(self.model.increment_cur_epoch_tensor)
 
+    def train_estimator(self):
+        pass
+
     def train_epoch(self):
         """
         implement the logic of epoch:
