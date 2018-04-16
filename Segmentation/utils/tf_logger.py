@@ -1,6 +1,8 @@
+##########################################################################################
+# Tensorflow logger
+##########################################################################################
 import tensorflow as tf
 import os
-
 
 class TFLogger:
     def __init__(self, sess,config):
@@ -12,7 +14,7 @@ class TFLogger:
                                                           self.sess.graph)
         self.test_summary_writer = tf.summary.FileWriter(os.path.join(self.config.summary_dir, "test"))
 
-    # it can summarize scalars and images.
+    # Summarize scalars and images.
     def summarize(self, step, summarizer="train", scope="", summaries_dict=None):
         """
         :param step: the step of the summary

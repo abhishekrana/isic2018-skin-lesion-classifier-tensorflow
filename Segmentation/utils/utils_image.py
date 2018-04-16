@@ -1,9 +1,10 @@
-
+##########################################################################################
+# Utility functions for images
+##########################################################################################
 from PIL import Image
 import numpy as np
 import os
 import glob
-
 
 def load_image(path, size=None):
     """
@@ -12,7 +13,7 @@ def load_image(path, size=None):
     """
     img = Image.open(path)
 
-    if not size is None:
+    if (size != None) and (size != ''):
         img = img.resize(size=size, resample=Image.LANCZOS)
 
     img = np.array(img)
@@ -24,7 +25,7 @@ def load_image(path, size=None):
     if (len(img.shape) == 2):
         img = np.repeat(img[:, :, np.newaxis], 3, axis=2)
 
-    return img
+    return np.array(img)
 
 
 def get_images_path_list_from_dir(dir_path, img_format='jpg'):
@@ -35,3 +36,9 @@ def get_images_path_list_from_dir(dir_path, img_format='jpg'):
     # return np.array(imgs), img_paths
 
     return img_paths
+
+
+def save_image(image_np, image_path_name):
+    img = Image.fromarray(image_np)
+    img.save(image_path_name)
+

@@ -1,12 +1,16 @@
 ##########################################################################################
-# Base class for creating Model
+# Base class for Training
 ##########################################################################################
 import tensorflow as tf
 
-class BaseModel:
-    def __init__(self, config):
+class BaseTrain:
+    def __init__(self, sess, model, data, config, logger):
+        self.model = model
+        self.logger = logger
         self.config = config
-        self.build_model()
+        self.sess = sess
+        self.data = data
 
-    def build_model(self):
+    def train(self):
         raise NotImplementedError
+

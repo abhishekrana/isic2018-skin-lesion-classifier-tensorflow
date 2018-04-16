@@ -1,12 +1,13 @@
 ##########################################################################################
-# Base class for creating Model
+# Base class for reading Dataset
 ##########################################################################################
 import tensorflow as tf
 
-class BaseModel:
+class BaseData:
+
     def __init__(self, config):
         self.config = config
-        self.build_model()
 
-    def build_model(self):
-        raise NotImplementedError
+    def preprocess_data():
+        pass
+
