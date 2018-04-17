@@ -5,6 +5,7 @@ from PIL import Image
 import numpy as np
 import os
 import glob
+from matplotlib.image import imread
 
 def load_image(path, size=None):
     """
@@ -26,6 +27,14 @@ def load_image(path, size=None):
         img = np.repeat(img[:, :, np.newaxis], 3, axis=2)
 
     return np.array(img)
+
+
+def load_images(image_paths):
+    # Load the images from disk.
+    images = [imread(path) for path in image_paths]
+
+    # Convert to a numpy array and return it.
+    return np.asarray(images)
 
 
 def get_images_path_list_from_dir(dir_path, img_format='jpg'):

@@ -6,6 +6,7 @@ import os
 import glob
 
 import utils.utils as utils
+import utils.utils_image as utils_image
 from utils.config import process_config
 
 class DataGeneratorKnifeySpoony(BaseData):
@@ -101,6 +102,24 @@ class DataGeneratorKnifeySpoony(BaseData):
         # images_batch = tf.Print(images_batch, [tf.shape(images_batch)], '\nTF images_batch shape\n', summarize=10)
 
         return x, y
+
+
+    def read_dataset(self, dataset_path):
+        image_paths_list = []
+        gt_labels = []
+
+        for label_name, label_no in self.config.labels.items():
+            # Read image paths
+            image_paths = utils_image.get_images_path_list_from_dir(
+                                                os.path.join(dataset_path, label_name),
+                                                img_format='jpg')
+            images_count = len(image_paths)
+            image_paths_list = image_paths_list + image_paths
+
+            # Create labels
+            gt_labels = gt_labels + [label_no]*images_count
+
+        return image_paths_list, gt_labels
 
 
 if __name__ == '__main__':

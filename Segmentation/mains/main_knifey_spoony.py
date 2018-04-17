@@ -41,12 +41,12 @@ def main():
 
 
     ## Set seed values to reproduce results
-    random.seed(7)
-    np.random.seed(7)
+    # random.seed(7)
+    # np.random.seed(7)
 
 
     ## Create output dirs
-    utils.remove_dirs([os.path.join('output', config.exp_name)])
+    # utils.remove_dirs([os.path.join('output', config.exp_name)])
     utils.create_dirs([config.summary_dir, config.checkpoint_dir, config.tfrecords_path_train,
                       config.tfrecords_path_test])
 
@@ -66,7 +66,7 @@ def main():
 
 
         ## Create TF Records
-        # TFRecordsKnifeySpoony(config)
+        TFRecordsKnifeySpoony(config)
 
 
         ## Create data generator using TF Records
@@ -82,6 +82,8 @@ def main():
 
         ## Train model
         trainer.train()
+        trainer.evaluate()
+        trainer.predict()
 
 
 if __name__ == '__main__':

@@ -1,2 +1,5 @@
+# Cleanup
 # rm -vrf output/knifey_spoony/*
-python mains/example.py -c configs/config_knifey_spoony.json
+
+# Run training
+python mains/main_knifey_spoony.py -c configs/config_knifey_spoony.json

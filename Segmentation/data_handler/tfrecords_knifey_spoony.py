@@ -20,8 +20,6 @@ class TFRecordsKnifeySpoony(BaseTFRecords):
     def __init__(self, config):
         super(TFRecordsKnifeySpoony, self).__init__(config)
 
-        self.labels = {'forkey':0, 'knifey':1, 'spoony':2}
-
 
         ## Read dataset
         image_paths_train, gt_labels_train = self.read_dataset(self.config.dataset_path_train)
@@ -29,8 +27,8 @@ class TFRecordsKnifeySpoony(BaseTFRecords):
 
 
         ## For debugging on smaller dataset
-        image_paths_train = image_paths_train[0:10]
-        image_paths_test = image_paths_test[0:10]
+        # image_paths_train = image_paths_train[0:10]
+        # image_paths_test = image_paths_test[0:10]
 
 
         ## Convert train dataset to TFRecord
@@ -53,7 +51,7 @@ class TFRecordsKnifeySpoony(BaseTFRecords):
         image_paths_list = []
         gt_labels = []
 
-        for label_name, label_no in self.labels.items():
+        for label_name, label_no in self.config.labels.items():
             # Read image paths
             image_paths = utils_image.get_images_path_list_from_dir(
                                                 os.path.join(dataset_path, label_name),

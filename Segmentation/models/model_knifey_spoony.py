@@ -11,15 +11,39 @@ class ModelKnifeySpoony(BaseModel):
 
 
     def build_model(self):
+        """
+        # config = tf.estimator.RunConfig(
+        #         model_dir=None,                                                                   # None: will use a default value set by the Estimator.
+        #         tf_random_seed=None,
+        #         save_summary_steps=100,
+        #         save_checkpoints_steps=_USE_DEFAULT,
+        #         save_checkpoints_secs=_USE_DEFAULT,
+        #         session_config=None,
+        #         keep_checkpoint_max=5,
+        #         keep_checkpoint_every_n_hours=10000,
+        #         log_step_count_steps=100
+        #     )
+        """
         params = {"learning_rate": self.config.learning_rate}
-
         self.model_estimator = tf.estimator.Estimator(model_fn=self.model_fn,
                                                       params=params,
+                                                      # config=config,
                                                       model_dir=self.config.checkpoint_dir)
 
 
-    def model_fn(self, features, labels, mode, params):
+    def model_fn(self, features, labels, mode, params, config):
         """
+        Args:
+            features: This is the x-arg from the input_fn.
+            labels:   This is the y-arg from the input_fn.
+                      It is None if mode=ModeKeys.PREDICT
+            mode:     Either ModeKeys.TRAIN, ModeKeys.EVAL, or ModeKeys.PREDICT
+            params:   User-defined hyper-parameters, e.g. learning-rate.
+                      Same as Estimator params field
+            config:   Allows updating things in your model_fn based on configuration such as
+                      num_ps_replicas, or model_dir
+                      Same as Estimator config field
+
         1. The TensorFlow model, e.g. a Convolutional Neural Network.
         2. The output of the model.
         3. The loss-function used to improve the model during optimization.
@@ -29,12 +53,9 @@ class ModelKnifeySpoony(BaseModel):
         The code is mostly the same, but in Prediction-mode we do not need to setup the
         loss-function and optimizer.
         """
-        # Args:
-        #
-        # features: This is the x-arg from the input_fn.
-        # labels:   This is the y-arg from the input_fn.
-        # mode:     Either TRAIN, EVAL, or PREDICT
-        # params:   User-defined hyper-parameters, e.g. learning-rate.
+        print('mode', mode)
+        print('params', params)
+        print('config', config)
 
         # Reference to the tensor named "image" in the input-function.
         x = features["image"]

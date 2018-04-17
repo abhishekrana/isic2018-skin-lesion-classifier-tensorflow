@@ -53,7 +53,7 @@ class BaseTFRecords():
         num_images = len(data['image'])
 
         # TODO: aSk: Handle case when images do not fit batch
-        batch_size = self.config.tfr_images_count
+        batch_size = self.config.tfr_images_per_record
         iters = int(num_images/batch_size)
 
         for iter_no in range(iters):
