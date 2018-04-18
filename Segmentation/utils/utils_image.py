@@ -5,6 +5,7 @@ from PIL import Image
 import numpy as np
 import os
 import glob
+import pdb
 from matplotlib.image import imread
 
 def load_image(path, size=None):
@@ -14,19 +15,24 @@ def load_image(path, size=None):
     """
     img = Image.open(path)
 
+    # TODO: Check
+    if img.format == 'PNG':
+        img = img.convert('RGB')
+
     if (size != None) and (size != ''):
         img = img.resize(size=size, resample=Image.LANCZOS)
 
     img = np.array(img)
 
+    # TODO: Why needed?
     # Scale image-pixels so they fall between 0.0 and 1.0
-    img = img / 255.0
+    # img = img / 255.0
 
     # Convert 2-dim gray-scale array to 3-dim RGB array.
-    if (len(img.shape) == 2):
-        img = np.repeat(img[:, :, np.newaxis], 3, axis=2)
+    # if (len(img.shape) == 2):
+    #     img = np.repeat(img[:, :, np.newaxis], 3, axis=2)
 
-    return np.array(img)
+    return img
 
 
 def load_images(image_paths):
@@ -48,6 +54,26 @@ def get_images_path_list_from_dir(dir_path, img_format='jpg'):
 
 
 def save_image(image_np, image_path_name):
-    img = Image.fromarray(image_np)
+    # image_np = np.rollaxis(image_np, 2, 0)
+    img = Image.fromarray(image_np, mode='RGB')
     img.save(image_path_name)
+
+
+def generate_rand_image(img_shape):
+    """
+    img_shape = (100, 100, 3)
+    """
+    img_np = np.random.rand(img_shape) * 255
+
+    img = Image.fromarray(img_np.astype('uint8')).convert('RGBA')
+    img.save('temp/img_generated.png')
+
+    return img
+
+
+
+
+
+
+
 
