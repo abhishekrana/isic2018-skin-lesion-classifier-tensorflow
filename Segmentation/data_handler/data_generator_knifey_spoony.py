@@ -1,3 +1,6 @@
+##########################################################################################
+# Class for generating batches of data using Tensorflow Records
+##########################################################################################
 
 from base.base_data import BaseData
 import numpy as np

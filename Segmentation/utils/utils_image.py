@@ -2,6 +2,7 @@
 # Utility functions for images
 ##########################################################################################
 from PIL import Image
+import tensorflow as tf
 import numpy as np
 import os
 import glob
@@ -72,6 +73,16 @@ def generate_rand_image(img_shape):
 
 
 
+def tf_image_save(path):
+    # tf.image.decode_jpeg returns a tf.uint8 tensor
+    img = tf.image.decode_jpeg(tf.read_file(path), channels=3)
+
+    # tf.image.resize_image_with_crop_or_pad returns tf.uint8
+    # tf.image.resize_images returns a tf.float32 tensor
+    img = tf.cast(tf.image.resize_images(img, [200, 200]), tf.uint8)
+
+    # sess.run(img)
+    return img
 
 
 

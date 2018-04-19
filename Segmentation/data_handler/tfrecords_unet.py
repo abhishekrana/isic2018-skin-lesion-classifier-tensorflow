@@ -71,11 +71,13 @@ class TFRecordsUnet(BaseTFRecords):
     def wrap_data(self, key, value, output_path):
         if key == 'image':
             # Pass output_path as param in order to save images
-            return self.wrap_data_image(value, output_path)
+            img_size = (self.config.tfr_image_width, self.config.tfr_image_height)
+            return self.wrap_data_image(value, output_path, img_size)
 
         elif key == 'gt_image':
             # Pass output_path as param in order to save images
-            return self.wrap_data_image(value, output_path)
+            img_size = (self.config.tfr_gt_image_width, self.config.tfr_gt_image_height)
+            return self.wrap_data_image(value, output_path, img_size)
 
         elif key == 'label':
             return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))

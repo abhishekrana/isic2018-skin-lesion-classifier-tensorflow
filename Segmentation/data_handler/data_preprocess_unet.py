@@ -71,10 +71,10 @@ class DataPreprocessUnet():
 
         return image_paths_train, image_paths_test
 
-    def preprocess_image(self, image_path_name, output_path):
+    def preprocess_image(self, image_path_name, output_path, image_size):
         ## Load and resize image
-        image_np = utils_image.load_image(image_path_name, (self.config.tfr_image_width,
-                                                            self.config.tfr_image_height))
+        image_np = utils_image.load_image(image_path_name, (image_size))
+
         ## Save processed image
         image_name = os.path.basename(image_path_name)
         image_name = image_name.split('.')[0] + '_processed.' + image_name.split('.')[-1]
@@ -92,7 +92,8 @@ class DataPreprocessUnet():
         print('\nPreprocessing Train images')
         for image_path_name in image_paths_train:
             utils.print_progress(count, len(image_paths_train))
-            self.preprocess_image(image_path_name, self.config.dataset_path_train_processed)
+            self.preprocess_image(image_path_name, self.config.dataset_path_train_processed,
+                                  (self.config.tfr_image_width, self.config.tfr_image_height))
             count = count + 1
 
         ## Test
@@ -100,7 +101,8 @@ class DataPreprocessUnet():
         count = 0
         for image_path_name in image_paths_test:
             utils.print_progress(count, len(image_paths_train))
-            self.preprocess_image(image_path_name, self.config.dataset_path_test_processed)
+            self.preprocess_image(image_path_name, self.config.dataset_path_test_processed,
+                                  (self.config.tfr_image_width, self.config.tfr_image_height))
             count = count + 1
 
         ## GT Train
@@ -108,7 +110,8 @@ class DataPreprocessUnet():
         print('\nPreprocessing Ground Truth Train images')
         for image_path_name in gt_image_paths_train:
             utils.print_progress(count, len(image_paths_train))
-            self.preprocess_image(image_path_name, self.config.dataset_path_train_processed)
+            self.preprocess_image(image_path_name, self.config.dataset_path_train_processed,
+                                  (self.config.tfr_gt_image_width, self.config.tfr_gt_image_height))
             count = count + 1
 
         ## GT Test
@@ -116,7 +119,8 @@ class DataPreprocessUnet():
         count = 0
         for image_path_name in gt_image_paths_test:
             utils.print_progress(count, len(image_paths_train))
-            self.preprocess_image(image_path_name, self.config.dataset_path_test_processed)
+            self.preprocess_image(image_path_name, self.config.dataset_path_test_processed,
+                                  (self.config.tfr_gt_image_width, self.config.tfr_gt_image_height))
             count = count + 1
 
         print('\n')
