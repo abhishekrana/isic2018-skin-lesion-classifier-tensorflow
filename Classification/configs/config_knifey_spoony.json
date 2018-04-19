@@ -1,0 +1,25 @@
+{
+  "exp_name": "knifey_spoony",
+  "labels":{"forkey":0, "knifey":1, "spoony":2},
+
+  "dataset_path_train": "datasets/knifey_spoony_vanilla/train",
+  "dataset_path_test": "datasets/knifey_spoony_vanilla/test",
+
+  "tfrecords_path_train": "datasets/knifey_spoony/train",
+  "tfrecords_path_test": "datasets/knifey_spoony/test",
+
+  "tfr_image_width":200,
+  "tfr_image_height":200,
+  "tfr_image_channels":3,
+  "tfr_images_per_record":100,
+
+  "learning_rate": 0.001,
+  "train_num_steps":200,
+  "num_classes":3,
+  "batch_size": 16,
+  "max_to_keep":5,
+
+  "num_parallel_calls":4,
+  "prefetch_buffer_size":1
+}
+
