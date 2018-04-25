@@ -32,12 +32,11 @@ def main():
         print("missing or invalid arguments")
         config_file = 'configs/config_cifar10.json'
         config = process_config(config_file)
-        exit(0)
+        # exit(0)
 
     if not os.path.exists(config.dataset_path_train):
         print(config.dataset_path_train)
         print('ERROR: Dataset not found')
-        exit(0)
 
 
     ## Set log levels
@@ -45,8 +44,8 @@ def main():
 
 
     ## Set seed values to reproduce results
-    # random.seed(7)
-    # np.random.seed(7)
+    random.seed(config.seed)
+    np.random.seed(config.seed)
 
 
     ## Create output dirs
@@ -54,28 +53,16 @@ def main():
     utils.create_dirs([config.summary_dir, config.checkpoint_dir, config.tfrecords_path_train,
                       config.tfrecords_path_test])
 
-    ## GPU
-    sess_config = tf.ConfigProto()
-    sess_config.gpu_options.allow_growth=True
 
-
-    ## Create tensorflow session
-    # with tf.Session(config=sess_config) as sess:
-        ## Debug
-        # Part of the convenience provided by these APIs is that they manage Sessions internally.
-        # This makes the LocalCLIDebugWrapperSession described in the preceding sections inapplicable.
-        # Fortunately, you can still debug them by using special hooks provided by tfdbg
-        # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
-
-        ## Create tensorboard logger
-        # logger = TFLogger(sess, config)
+    ## Create tensorboard logger
+    # logger = TFLogger(sess, config)
 
 
     sess=''
     logger=''
     ## Create TF Records
+    ## TODO: Regenerate records everytime `batch_size` is changed
     # TFRecordsCifar10(config)
-
 
     ## Create data generator using TF Records
     data = DataGeneratorCifar10(config)
@@ -89,9 +76,13 @@ def main():
     trainer = TrainerCifar10(sess, model, data, config, logger)
 
     ## Train model
-    # trainer.train()
-    trainer.evaluate()
-    trainer.predict()
+    print('MODE: {}'.format(args.mode))
+    if (args.mode == 'eval'):
+        trainer.evaluate()
+    elif (args.mode == 'predict'):
+        trainer.predict()
+    else:
+        trainer.train()
 
 
 if __name__ == '__main__':

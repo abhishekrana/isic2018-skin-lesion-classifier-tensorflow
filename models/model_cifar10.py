@@ -31,11 +31,11 @@ class ModelCifar10(BaseModel):
 
         session_config = tf.ConfigProto()
         session_config.gpu_options.allow_growth=True
-        config =  tf.estimator.RunConfig(session_config=session_config)
+        est_config =  tf.estimator.RunConfig(session_config=session_config)
 
         self.model_estimator = tf.estimator.Estimator(model_fn=self.model_fn,
                                                       params=params,
-                                                      config=config,
+                                                      config=est_config,
                                                       model_dir=self.config.checkpoint_dir)
 
 
@@ -69,6 +69,11 @@ class ModelCifar10(BaseModel):
 
         # Reference to the tensor named "image" in the input-function.
         x = features["image"]
+
+        # 32x3072 i.e batch size of 32 with 32x32x3 image
+        if self.config.debug_tf_print:
+            x = tf.Print(x, [x, tf.shape(x)], '\nTF x\n', summarize=10)
+
 
         # The convolutional layers expect 4-rank tensors but x is a 2-rank tensor, so reshape it.
         net = tf.reshape(x, [-1, self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels])

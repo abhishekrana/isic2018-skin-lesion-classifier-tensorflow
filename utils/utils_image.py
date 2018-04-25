@@ -20,7 +20,7 @@ def load_image(path, size=None):
     img = np.array(img)
 
     # Scale image-pixels so they fall between 0.0 and 1.0
-    img = img / 255.0
+    # img = img / 255.0
 
     # Convert 2-dim gray-scale array to 3-dim RGB array.
     if (len(img.shape) == 2):
@@ -35,6 +35,18 @@ def load_images(image_paths):
 
     # Convert to a numpy array and return it.
     return np.asarray(images)
+
+def load_images_v2(image_paths_list):
+    images = []
+    for image_path in image_paths_list:
+        image = Image.open(image_path)
+        image = np.array(image, dtype=np.float32)
+        images.append(image)
+    images = np.array(images)
+
+    # images = np.array([np.array(Image.open(image_path), dtype=np.float32) for image_path in image_paths_list])
+
+    return images
 
 
 def get_images_path_list_from_dir(dir_path, img_format='jpg'):

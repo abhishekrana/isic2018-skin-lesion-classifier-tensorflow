@@ -14,6 +14,11 @@ def get_args():
         metavar='C',
         default='None',
         help='The Configuration file')
+    argparser.add_argument(
+        '-m', '--mode',
+        metavar='M',
+        default='None',
+        help='train/eval/test')
     args = argparser.parse_args()
     return args
 
@@ -97,3 +102,13 @@ def one_hot_encoded(class_numbers, num_classes=None):
 
     return np.eye(num_classes, dtype=float)[class_numbers]
 
+
+def shuffle_data(list1, list2):
+    """Joint shuffling of the lists"""
+    permutation = np.random.permutation(len(list1))
+    list1_shuffled = []
+    list2_shuffled = []
+    for i in permutation:
+        list1_shuffled.append(list1[i])
+        list2_shuffled.append(list2[i])
+    return list1_shuffled, list2_shuffled

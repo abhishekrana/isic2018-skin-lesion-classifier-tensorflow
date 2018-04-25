@@ -32,9 +32,16 @@ class TFRecordsCifar10(BaseTFRecords):
         image_paths_test, gt_labels_test = self.read_dataset(self.config.dataset_path_test)
 
 
+        image_paths_train, gt_labels_train  = utils.shuffle_data(image_paths_train, gt_labels_train)
+        image_paths_test, gt_labels_test  = utils.shuffle_data(image_paths_test, gt_labels_test)
+
         ## For debugging on smaller dataset
-        # image_paths_train = image_paths_train[0:4]
-        # image_paths_test = image_paths_test[0:4]
+        if config.debug_train_images_count != 0:
+            image_paths_train = image_paths_train[0:config.debug_train_images_count]
+            gt_labels_train = gt_labels_train[0:config.debug_train_images_count]
+        if config.debug_test_images_count != 0:
+            image_paths_test = image_paths_test[0:config.debug_test_images_count]
+            gt_labels_test = gt_labels_test[0:config.debug_test_images_count]
 
 
         ## Convert train dataset to TFRecord
@@ -91,8 +98,12 @@ class TFRecordsCifar10(BaseTFRecords):
 
 ### MAIN ###
 if __name__ == '__main__':
-    args = utils.get_args()
-    config = process_config(args.config)
+    # args = utils.get_args()
+    # config = process_config(args.config)
+
+    config_file = 'configs/config_cifar10.json'
+    config = process_config(config_file)
+
     tfrecords_cfiar10 = TFRecordsCifar10(config)
 
 

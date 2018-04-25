@@ -5,6 +5,7 @@ from base.base_data import BaseData
 import numpy as np
 import tensorflow as tf
 import glob
+import pudb
 
 import utils.utils as utils
 import utils.utils_image as utils_image
@@ -71,7 +72,10 @@ class DataGeneratorCifar10(BaseData):
         # Create a TensorFlow Dataset-object which has functionality
         # for reading and shuffling data from TFRecords files.
         # files = tf.data.Dataset.list_files(file_pattern)
-        dataset = tf.data.TFRecordDataset(filenames=filenames, num_parallel_reads=self.config.data_gen_num_parallel_reads)
+        if tf.__version__ == "1.7.0":
+            dataset = tf.data.TFRecordDataset(filenames=filenames, num_parallel_reads=self.config.data_gen_num_parallel_reads)
+        else:
+            dataset = tf.data.TFRecordDataset(filenames=filenames)
 
 
         ## TRANSFORM data to prepare for training
@@ -92,7 +96,10 @@ class DataGeneratorCifar10(BaseData):
         # Parse the serialized data in the TFRecords files.
         # This returns TensorFlow tensors for the image and labels.
         # num_parallel_calls: recommend using the number of available CPU cores for its value.
-        dataset = dataset.map(self.parse_fn, num_parallel_calls=self.config.data_gen_num_parallel_calls)
+        if (tf.__version__ == '1.7.0'):
+            dataset = dataset.map(self.parse_fn, num_parallel_calls=self.config.data_gen_num_parallel_calls)
+        else:
+            dataset = dataset.map(self.parse_fn)
 
         # Get a batch of data with the given size.
         dataset = dataset.batch(batch_size)
@@ -116,9 +123,10 @@ class DataGeneratorCifar10(BaseData):
         x = {'image': images_batch}
         y = labels_batch
 
-        # Print images_batch shape for debugging
-        images_batch = tf.Print(images_batch, [tf.shape(images_batch)], '\nTF images_batch shape\n', summarize=10)
-        print('images_batch', images_batch)
+        # Print for debugging
+        if self.config.debug_tf_print:
+            x['image'] = tf.Print(x['image'], [tf.shape(x['image'])], '\nTF x\n', summarize=20)
+            y = tf.Print(y, [y, tf.shape(y)], '\nTF y\n', summarize=20)
 
         return x, y
 
@@ -141,8 +149,11 @@ class DataGeneratorCifar10(BaseData):
         return image_paths_list, gt_labels
 
 if __name__ == '__main__':
-    args = utils.get_args()
-    config = process_config(args.config)
+    # args = utils.get_args()
+    # config = process_config(args.config)
+
+    config_file = 'configs/config_cifar10.json'
+    config = process_config(config_file)
 
     filenames_regex = os.path.join(config.tfrecords_path_train, '*.tfr')
     filenames = glob.glob(filenames_regex)
