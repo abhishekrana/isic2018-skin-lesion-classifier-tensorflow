@@ -1,0 +1,35 @@
+{
+  "exp_name": "densenet",
+
+  "labels":{"MEL": 0, "NV": 1, "BCC": 2, "AKIEC": 3, "BKL": 4, "DF": 5, "VASC": 6},
+  "num_classes":7,
+
+  "dataset_path_train": "datasets/densenet/train",
+  "dataset_path_test": "datasets/densenet/test",
+
+  "tfrecords_path_train": "datasets/densenet_tfr/train",
+  "tfrecords_path_test": "datasets/densenet_tfr/test",
+
+  "tfr_image_width":128,
+  "tfr_image_height":128,
+  "tfr_image_channels":3,
+  "tfr_images_per_record":1000,
+
+  "data_gen_num_parallel_reads":4,
+  "data_gen_num_parallel_calls":4,
+  "data_gen_prefetch_buffer_size":2,
+
+
+  "learning_rate": 0.0001,
+  "train_num_steps":50000,
+  "batch_size": 100,
+  "max_to_keep":10,
+
+
+  "debug": 0,
+  "debug_tf_print": 0,
+  "debug_train_images_count": 0,
+  "debug_test_images_count": 0,
+  "seed": 7
+}
+
