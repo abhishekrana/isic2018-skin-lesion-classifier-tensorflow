@@ -20,9 +20,9 @@
 
 
   "learning_rate": 0.0001,
-  "train_num_steps":20000,
+  "train_num_steps":50000,
   "batch_size": 100,
-  "max_to_keep":5,
+  "max_to_keep":10,
 
 
   "debug": 0,

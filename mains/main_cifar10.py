@@ -7,6 +7,7 @@ from tensorflow.python import debug as tf_debug
 
 import os
 import shutil
+import time
 import random
 import numpy as np
 os.sys.path.append('./')
@@ -75,12 +76,36 @@ def main():
     ## Create Trainer
     trainer = TrainerCifar10(sess, model, data, config, logger)
 
-    ## Train model
+
     print('MODE: {}'.format(args.mode))
+    checkpoints_path = os.path.join('output', config.exp_name, 'checkpoints')
+
+    ## EVALUATION
     if (args.mode == 'eval'):
-        trainer.evaluate()
+        last_checkpoint = None
+        while(True):
+
+            latest_checkpoint = tf.train.latest_checkpoint(checkpoints_path)
+
+            if latest_checkpoint is None:
+                print('No checkpoint does not exist {}'.format(last_checkpoint))
+                time.sleep(5)
+                continue
+
+            if last_checkpoint == latest_checkpoint:
+                print('Sleeping latest_checkpoint {}'.format(latest_checkpoint))
+                time.sleep(5)
+                continue
+
+            last_checkpoint = latest_checkpoint
+
+            trainer.evaluate()
+
+    ## PREDICTION
     elif (args.mode == 'predict'):
         trainer.predict()
+
+    ## TRAINING
     else:
         trainer.train()
 

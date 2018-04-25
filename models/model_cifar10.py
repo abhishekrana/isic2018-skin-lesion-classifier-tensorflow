@@ -31,7 +31,10 @@ class ModelCifar10(BaseModel):
 
         session_config = tf.ConfigProto()
         session_config.gpu_options.allow_growth=True
-        est_config =  tf.estimator.RunConfig(session_config=session_config)
+        est_config =  tf.estimator.RunConfig(
+                                            session_config=session_config,
+                                            save_checkpoints_steps=5000,
+                                            save_summary_steps=1000)
 
         self.model_estimator = tf.estimator.Estimator(model_fn=self.model_fn,
                                                       params=params,
@@ -61,11 +64,7 @@ class ModelCifar10(BaseModel):
         The code is mostly the same, but in Prediction-mode we do not need to setup the
         loss-function and optimizer.
         """
-        print('\n=========================')
         print('mode', mode)
-        print('params', params)
-        print('config', config)
-        print('features', features)
 
         # Reference to the tensor named "image" in the input-function.
         x = features["image"]

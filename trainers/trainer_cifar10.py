@@ -36,7 +36,10 @@ class TrainerCifar10(BaseTrain):
             hooks = [tf_debug.LocalCLIDebugHook()]
             # hooks=[tf.train.LoggingTensorHook(["layer_conv1/bias/Adam:0"], every_n_iter=1)]
 
+        print('\n=========================')
+        print('TRAIN')
         self.model.model_estimator.train(input_fn=self.train_input_fn, steps=self.config.train_num_steps, hooks=hooks)
+        print('\n')
 
 
     def train_input_fn(self):
@@ -50,11 +53,14 @@ class TrainerCifar10(BaseTrain):
 
 
     def evaluate(self):
-        print('Eval Train')
-        self.model.model_estimator.evaluate(input_fn=self.eval_train_input_fn, name="eval_train")
+        print('\n=========================')
+        print('EVAL [dataset=train]')
+        self.model.model_estimator.evaluate(input_fn=self.eval_train_input_fn, name="train")
 
-        print('Eval Test')
-        self.model.model_estimator.evaluate(input_fn=self.eval_test_input_fn, name="eval_test")
+        print('\n=========================')
+        print('EVAL [dataset=test]')
+        self.model.model_estimator.evaluate(input_fn=self.eval_test_input_fn, name="test")
+        print('\n')
 
         # name: to run multiple evaluations on different data sets, such as on training data vs test data
         # evaluate(input_fn, steps=None, hooks=None, checkpoint_path=None, name=None)
@@ -102,7 +108,11 @@ class TrainerCifar10(BaseTrain):
                 num_epochs=1,
                 shuffle=False)
 
+        print('\n=========================')
+        print('PREDICT')
         predictions = self.model.model_estimator.predict(input_fn=predict_input_fn)
+        print('\n')
+
         cls_pred = np.array(list(predictions))
         print(len(cls_pred))
 

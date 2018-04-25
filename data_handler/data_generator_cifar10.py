@@ -37,22 +37,18 @@ class DataGeneratorCifar10(BaseData):
 
         # Get the image as raw bytes.
         image_raw = parsed_example['image']
-        print('image_raw', image_raw)
 
         # Decode the raw bytes so it becomes a tensor with type.
         image = tf.decode_raw(image_raw, tf.uint8)
-        print('============image', image)
 
         # The type is now uint8 but we need it to be float.
         image = tf.cast(image, tf.float32)
-        print('image', image)
 
         # Augments image using slice, reshape, resize_bilinear
         # image = _augment_helper(image)
 
         # Get the label associated with the image.
         label = parsed_example['label']
-        print('label', label)
 
         # The image and label are now correct TensorFlow types.
         return image, label
