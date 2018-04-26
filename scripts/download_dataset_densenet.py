@@ -27,16 +27,16 @@ class Densenet:
         # Create directory structure
         if os.path.exists(self.train_images_path):
             shutil.rmtree(self.train_images_path)
-        os.makedirs(self.train_images_path)
+        os.makedirs(self.train_images_path, exist_ok=True)
         if os.path.exists(self.test_images_path):
             shutil.rmtree(self.test_images_path)
-        os.makedirs(self.test_images_path)
+        os.makedirs(self.test_images_path, exist_ok=True)
 
         for label_index, label_name in label_names_dict.items():
             print('label_index', label_index)
             print('label_name', label_name)
-            os.makedirs(os.path.join(self.train_images_path, label_name))
-            os.makedirs(os.path.join(self.test_images_path, label_name))
+            os.makedirs(os.path.join(self.train_images_path, label_name), exist_ok=True)
+            os.makedirs(os.path.join(self.test_images_path, label_name), exist_ok=True)
 
 
         images_name = []

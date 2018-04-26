@@ -32,7 +32,9 @@ class BaseTFRecords():
     def wrap_data_image(self, image_path, output_path=None):
 
         ## Convert the image to raw bytes.
-        img_size = (self.config.tfr_image_width, self.config.tfr_image_height)
+        # TODO: _aSk check order
+        # img_size = (self.config.tfr_image_width, self.config.tfr_image_height)
+        img_size = (self.config.tfr_image_height, self.config.tfr_image_width)
 
         img = Image.open(image_path)
         img = img.resize(size=img_size, resample=Image.LANCZOS)

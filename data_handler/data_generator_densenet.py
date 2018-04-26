@@ -12,6 +12,7 @@ import utils.utils_image as utils_image
 from utils.config import process_config
 
 
+
 class DataGeneratorDensenet(BaseData):
     def __init__(self, config):
         super(DataGeneratorDensenet, self).__init__(config)
@@ -113,16 +114,24 @@ class DataGeneratorDensenet(BaseData):
 
         # Get the next batch of images and labels.
         images_batch, labels_batch = iterator.get_next()
+        print('labels_batch', labels_batch)
 
+
+        # The convolutional layers expect 4-rank tensors but images_batch is a 2-rank tensor, so reshape it.
+        images_batch = tf.reshape(images_batch, [-1, self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels])
+
+        # Convert labels to categorical format
+        labels_batch_categorical = tf.one_hot(labels_batch, self.config.num_classes)
 
         # The input-function must return a dict wrapping the images.
-        x = {'image': images_batch}
-        y = labels_batch
+        # x = {'input_1': images_batch}
+        x = {'images_input': images_batch}
+        y = labels_batch_categorical
 
         # Print for debugging
-        if self.config.debug_tf_print:
-            x['image'] = tf.Print(x['image'], [tf.shape(x['image'])], '\nTF x\n', summarize=20)
-            y = tf.Print(y, [y, tf.shape(y)], '\nTF y\n', summarize=20)
+        # if self.config.debug_tf_print:
+        #     x['image'] = tf.Print(x['image'], [tf.shape(x['image'])], '\nTF x\n', summarize=20)
+        #     y = tf.Print(y, [y, tf.shape(y)], '\nTF y\n', summarize=20)
 
         return x, y
 
@@ -145,18 +154,29 @@ class DataGeneratorDensenet(BaseData):
         return image_paths_list, gt_labels
 
 if __name__ == '__main__':
+
     # args = utils.get_args()
     # config = process_config(args.config)
 
     config_file = 'configs/config_densenet.json'
+    # config_file = 'configs/config_cifar10.json'
     config = process_config(config_file)
 
     filenames_regex = os.path.join(config.tfrecords_path_train, '*.tfr')
     filenames = glob.glob(filenames_regex)
+    print('filenames', filenames)
 
     data_generator_densenet = DataGeneratorDensenet(config)
-    x, y = data_generator_densenet.input_fn(filenames=filenames, train=True)
-    print('x', x)
-    print('y', y)
+    next_batch = data_generator_densenet.input_fn(filenames=filenames, train=True)
+    print('next_batch', next_batch)
 
+    with tf.Session() as sess:
+
+        images_batch, labels_batch = sess.run(next_batch)
+
+        print('images_batch:{} shape:{}'.format(images_batch, images_batch['images_input'].shape))
+        print('labels_batch:{} shape:{}'.format(labels_batch, labels_batch.shape))
+
+        image = tf.keras.preprocessing.image.array_to_img(images_batch['images_input'][0])
+        image.show()
 

@@ -53,7 +53,7 @@ class Cifar10:
 
         if os.path.exists(self.output_path):
             shutil.rmtree(self.output_path)
-        os.makedirs(self.output_path)
+        os.makedirs(self.output_path, exist_ok=True)
 
         print('Downloading dataset...')
         urllib.request.urlretrieve(url=self.dataset_url, filename=self.output_file_path_name)
@@ -77,14 +77,14 @@ class Cifar10:
         # Create directory structure
         if os.path.exists(self.train_images_path):
             shutil.rmtree(self.train_images_path)
-        os.makedirs(self.train_images_path)
+        os.makedirs(self.train_images_path, exist_ok=True)
         if os.path.exists(self.test_images_path):
             shutil.rmtree(self.test_images_path)
-        os.makedirs(self.test_images_path)
+        os.makedirs(self.test_images_path, exist_ok=True)
 
         for label_index, label_name in label_names_dict.items():
-            os.makedirs(os.path.join(self.train_images_path, label_name))
-            os.makedirs(os.path.join(self.test_images_path, label_name))
+            os.makedirs(os.path.join(self.train_images_path, label_name), exist_ok=True)
+            os.makedirs(os.path.join(self.test_images_path, label_name), exist_ok=True)
             print('label_name', label_name)
 
         print('Processing train set...')

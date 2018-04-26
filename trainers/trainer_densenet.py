@@ -23,6 +23,11 @@ class TrainerDensenet(BaseTrain):
 
     def train(self):
 
+        # labels_categorical = tf.keras.utils.to_categorical(labels, self.config.num_classes)
+        # eval_spec = tf.estimator.EvalSpec(input_fn=self.eval_test_input_fn)
+        # train_spec = tf.estimator.TrainSpec(input_fn=self.train_input_fn)
+        # tf.estimator.train_and_evaluate(self.model.model_estimator, train_spec, eval_spec)
+
         # hooks=[
         # tf.train.LoggingTensorHook(["layer_conv1/bias/Adam:0"], every_n_iter=1),
         # tf.train.LoggingTensorHook(["Reshape:0:DebugIdentity"], every_n_iter=1),
@@ -38,7 +43,7 @@ class TrainerDensenet(BaseTrain):
 
         print('\n=========================')
         print('TRAIN')
-        self.model.model_estimator.train(input_fn=self.train_input_fn, steps=self.config.train_num_steps, hooks=hooks)
+        self.model.model_estimator.train(input_fn=lambda: self.train_input_fn(), steps=self.config.train_num_steps, hooks=hooks)
         print('\n')
 
 
@@ -55,26 +60,16 @@ class TrainerDensenet(BaseTrain):
     def evaluate(self):
         print('\n=========================')
         print('EVAL [dataset=train]')
-        self.model.model_estimator.evaluate(input_fn=self.eval_train_input_fn, name="train")
+        self.model.model_estimator.evaluate(input_fn=lambda: self.eval_input_fn(self.config.tfrecords_path_train), name="train")
 
         print('\n=========================')
         print('EVAL [dataset=test]')
-        self.model.model_estimator.evaluate(input_fn=self.eval_test_input_fn, name="test")
+        self.model.model_estimator.evaluate(input_fn=lambda: self.eval_input_fn(self.config.tfrecords_path_test), name="test")
         print('\n')
 
-        # name: to run multiple evaluations on different data sets, such as on training data vs test data
-        # evaluate(input_fn, steps=None, hooks=None, checkpoint_path=None, name=None)
 
-    def eval_train_input_fn(self):
-        filenames_regex = os.path.join(self.config.tfrecords_path_train, '*.tfr')
-        filenames = glob.glob(filenames_regex)
-        if not filenames:
-            print('ERROR: No .tfr files found')
-            exit(1)
-        return self.data.input_fn(filenames=filenames, train=False)
-
-    def eval_test_input_fn(self):
-        filenames_regex = os.path.join(self.config.tfrecords_path_test, '*.tfr')
+    def eval_input_fn(self, tfrecords_path):
+        filenames_regex = os.path.join(tfrecords_path, '*.tfr')
         filenames = glob.glob(filenames_regex)
         if not filenames:
             print('ERROR: No .tfr files found')
@@ -93,7 +88,6 @@ class TrainerDensenet(BaseTrain):
         image_idx_rand = random.sample(range(1, len(image_paths_list)), no_images_predict)
         print('image_idx_rand :{}', image_idx_rand)
 
-        # pu.db
         image_paths_list = np.array(image_paths_list)[image_idx_rand].tolist()
         gt_labels = np.array(gt_labels)[image_idx_rand].tolist()
 
@@ -118,6 +112,5 @@ class TrainerDensenet(BaseTrain):
 
         for i in range(no_images_predict):
             print('[GT Pred] [{} {}]'.format(gt_labels[i], cls_pred[i]))
-
 
 

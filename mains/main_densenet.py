@@ -78,7 +78,8 @@ def main():
 
 
     print('MODE: {}'.format(args.mode))
-    checkpoints_path = os.path.join('output', config.exp_name, 'checkpoints')
+    # checkpoints_path = os.path.join('output', config.exp_name, 'checkpoints')
+    checkpoints_path = os.path.join('output', config.exp_name, 'checkpoints', 'keras')
 
     ## EVALUATION
     if (args.mode == 'eval'):

@@ -3,10 +3,19 @@
 
 # Estimators
 # pre-made Estimators create and manage Graph and Session objects for you
+#
+# https://www.dlology.com/blog/an-easy-guide-to-build-new-tensorflow-datasets-and-estimator-with-epeat_count=5,
 ##########################################################################################
 from base.base_model import BaseModel
 import tensorflow as tf
 import os
+from tensorflow.python.keras.applications.vgg16 import VGG16
+from tensorflow.python.keras import models
+from tensorflow.python.keras import layers
+from tensorflow.python.keras.models import Sequential
+from tensorflow.python.keras.layers import Dense, Dropout, Activation, Flatten
+from tensorflow.python.keras.layers import Convolution2D, MaxPooling2D
+
 
 class ModelDensenet(BaseModel):
     def __init__(self, config):
@@ -36,13 +45,69 @@ class ModelDensenet(BaseModel):
                                             save_checkpoints_steps=5000,
                                             save_summary_steps=1000)
 
-        self.model_estimator = tf.estimator.Estimator(model_fn=self.model_fn,
-                                                      params=params,
-                                                      config=est_config,
-                                                      model_dir=self.config.checkpoint_dir)
+
+        ## Tensorflow Model
+        # self.model_estimator = tf.estimator.Estimator(model_fn=self.model_fn_2,
+        #                                               params=params,
+        #                                               config=est_config,
+        #                                               model_dir=self.config.checkpoint_dir)
 
 
-    def model_fn(self, features, labels, mode, params, config):
+
+        ## Keras Model
+        # NOTE: model_dir should be absolute path
+        model_dir = os.path.join(os.getcwd(), self.config.checkpoint_dir, 'keras') 
+        model = self.model_fn()
+        self.model_estimator = tf.keras.estimator.model_to_estimator(keras_model=model,
+                                                                     config=est_config,
+                                                                     custom_objects=params,
+                                                                     model_dir=model_dir)
+
+
+    # def model_fn(self, features, labels, mode, params, config):
+    def model_fn(self):
+
+        # TODO: _aSk Check order
+        img_shape = (self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels)
+
+
+        # conv_base = VGG16(weights='imagenet', include_top=False, input_shape=img_shape)
+        # model = models.Sequential()
+        # model.add(conv_base)
+        # model.add(layers.Flatten())
+
+        # # model.add(layers.Dense(256, activation='relu', input_dim=self.config.tfr_image_height * self.config.tfr_image_width * self.config.tfr_image_channels))
+
+        # model.add(layers.Dense(256, activation='relu'))
+        # model.add(layers.Dense(self.config.num_classes, activation='sigmoid'))
+        # conv_base.trainable = False
+  	
+
+
+        model = Sequential()
+
+        # 1st layer should be named 'images' to match with {'images_input': value} fed by tf.Dataset API
+        model.add(Convolution2D(32, 3, 3, activation='relu', input_shape=img_shape, name='images'))
+        model.add(Convolution2D(32, 3, 3, activation='relu'))
+        model.add(MaxPooling2D(pool_size=(2,2)))
+        model.add(Dropout(0.25))
+
+        model.add(Flatten())
+        model.add(Dense(128, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(self.config.num_classes, activation='softmax'))
+
+        model.summary()
+
+        model.compile(
+                loss='categorical_crossentropy',
+                optimizer=tf.keras.optimizers.RMSprop(lr=2e-5),
+                metrics=['acc'])
+
+        return model
+
+
+    def model_fn_2(self, features, labels, mode, params, config):
         """
         Args:
             features: This is the x-arg from the input_fn.
@@ -67,15 +132,16 @@ class ModelDensenet(BaseModel):
         print('mode', mode)
 
         # Reference to the tensor named "image" in the input-function.
-        x = features["image"]
+        x = features['images_input']
 
         # 32x3072 i.e batch size of 32 with 32x32x3 image
-        if self.config.debug_tf_print:
-            x = tf.Print(x, [x, tf.shape(x)], '\nTF x\n', summarize=10)
+        # if self.config.debug_tf_print:
+        #     x = tf.Print(x, [x, tf.shape(x)], '\nTF x\n', summarize=10)
 
 
         # The convolutional layers expect 4-rank tensors but x is a 2-rank tensor, so reshape it.
-        net = tf.reshape(x, [-1, self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels])
+        # net = tf.reshape(x, [-1, self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels])
+        net = x
 
         # First convolutional layer.
         net = tf.layers.conv2d(inputs=net, name='layer_conv1',
@@ -126,8 +192,12 @@ class ModelDensenet(BaseModel):
             # calculating the cross-entropy between the output of
             # the neural network and the true labels for the input data.
             # This gives the cross-entropy for each image in the batch.
-            cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels,
-                                                                        logits=logits)
+
+            # Labels used in softmax_cross_entropy_with_logits are the one hot version of labels 
+            # used in sparse_softmax_cross_entropy_with_logits.
+            # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits)
+            cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits)
+
 
             # Reduce the cross-entropy batch-tensor to a single number
             # which can be used in optimization of the neural network.
@@ -144,7 +214,8 @@ class ModelDensenet(BaseModel):
             # in this case the classification accuracy.
             metrics = \
             {
-                "accuracy": tf.metrics.accuracy(labels, y_pred_cls)
+                # "accuracy": tf.metrics.accuracy(labels, y_pred_cls)
+                "accuracy": tf.metrics.accuracy(tf.argmax(labels, axis=1), y_pred_cls)
             }
 
             # Wrap all of this in an EstimatorSpec.
