@@ -23,6 +23,7 @@ pip install matplotlib
 pip install bunch
 pip install pudb
 pip install tqdm
+pip install keras
 ```
 
 ## Dataset
