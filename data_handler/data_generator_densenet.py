@@ -144,7 +144,7 @@ class DataGeneratorDensenet(BaseData):
             # Read image paths
             image_paths = utils_image.get_images_path_list_from_dir(
                                                 os.path.join(dataset_path, label_name),
-                                                img_format='jpg')
+                                                img_format=self.config.dataset_path_image_format)
             images_count = len(image_paths)
             image_paths_list = image_paths_list + image_paths
 

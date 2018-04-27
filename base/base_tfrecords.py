@@ -57,6 +57,7 @@ class BaseTFRecords():
         # TODO: aSk: Handle case when images do not fit batch
         batch_size = self.config.tfr_images_per_record
         iters = int(num_images/batch_size)
+        print('num_images: {}'.format(num_images))
         print('batch_size: {}'.format(batch_size))
         print('iters: {}'.format(iters))
 

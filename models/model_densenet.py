@@ -22,6 +22,9 @@ from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, BatchNormalizat
 from tensorflow.python.keras.layers import Concatenate
 from tensorflow.python.keras.optimizers import Adam
 
+from models.model_densenet_121 import Densenet121
+from models.model_densenet_custom_layers import Scale
+
 
 class ModelDensenet(BaseModel):
     def __init__(self, config):
@@ -64,12 +67,126 @@ class ModelDensenet(BaseModel):
         # NOTE: model_dir should be absolute path
         model_dir = os.path.join(os.getcwd(), self.config.checkpoint_dir, 'keras') 
         # model = self.model_fn()
-        model = self.dense_model_fn()
+        # model = self.dense_model_fn()
+        # model = self.dense_model_fn_v2()
+        model = Densenet121(self.config, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.0, dropout_rate=0.0, weight_decay=1e-4, classes=self.config.num_classes, weights_path=None)
+
+        model.summary()
+
+
+        print('LearningRate: {}'.format(self.config.learning_rate))
+        model.compile(
+                loss='categorical_crossentropy',
+                # optimizer=tf.keras.optimizers.RMSprop(lr=2e-5),
+                # optimizer=tf.keras.optimizers.RMSprop(lr=self.config.learning_rate),
+                optimizer=tf.keras.optimizers.Adam(lr=self.config.learning_rate),
+                # optimizer=tf.keras.optimizers.Adam(),
+                # optimizer=tf.keras.optimizers.SGD(),
+                metrics=['accuracy'])
+
+
+
         self.model_estimator = tf.keras.estimator.model_to_estimator(keras_model=model,
                                                                      config=est_config,
                                                                      custom_objects=params,
                                                                      model_dir=model_dir)
 
+    ### DENSENET V2 ###
+    def dense_block_v2(self, x, k, l):
+        """
+        Motivated by [12], we define H_l(·) as a composite function of three consecutive operations:
+        batch normalization (BN) [14], followed by a rectified linear unit (ReLU) [6] and a 3 × 3 convolution (Conv)
+        """
+        t = x
+        for i in range(l):
+            batch_norm = BatchNormalization()(t)
+            relu = Activation('relu')(batch_norm)
+            # conv2d_3x3 = Convolution2D(filters=k, kernel_size=(3,3), strides=(2,2), input_shape=img_shape, name='images'))
+            conv2d_3x3 = Convolution2D(filters=k, kernel_size=(3,3), use_bias=False, padding='same')(relu)
+            concat = Concatenate(axis=-1)([t, conv2d_3x3])
+            t = concat
+        return t
+
+    def transition_layer_v2(self, x, k):
+        """
+        The transition layers used in our experiments consist of a batch normalization layer and 
+        an 1×1 convolutional layer followed by a 2×2 average pooling layer.
+
+        We refer to our network with such a bottleneck layer, i.e., to the 
+        BN-ReLU-Conv(1×1)-BN-ReLU-Conv(3×3) version of H_l, as DenseNet-B. 
+        In our experiments, we let each 1×1 convolution produce 4k feature-maps.
+
+        We use 1×1 convolution followed by 2×2 average pooling as transition
+        layers between two contiguous dense blocks
+        """
+        batch_norm = BatchNormalization()(x)
+        # relu = Activation('relu')(batch_norm)
+        conv2d_bottleneck = Convolution2D(filters=k, kernel_size=(1,1), use_bias=False, padding='same')(batch_norm)
+        avg_pool2d = AveragePooling2D(pool_size=(2,2))(conv2d_bottleneck)
+        return avg_pool2d
+
+    def output_layer_v2(self, x):
+        """
+        At the end of the last dense block, a global average pooling is performed
+        and then a softmax classifier is attached.
+        """
+        # batch_norm = BatchNormalization()(x)
+        # relu = Activation('relu')(batch_norm)
+        avg_pool2d = AveragePooling2D(pool_size=(2,2))(relu)
+        flat = Flatten()(avg_pool2d)
+        output = Dense(self.config.num_classes, activation='softmax')(flat)
+        return output
+
+
+    def dense_model_fn_v2(self):
+        """
+        DenseNet can have very narrow layers, e.g., k = 12. 
+        """
+        # TODO: _aSk Check order
+        img_shape = (self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels)
+
+        # Growth rate/ channels
+        k = 16
+        l = 10      # l is layer index
+
+        # 1st layer should be named 'images_input' to match with {'images_input': value} fed by tf.Dataset API
+        x = Input(shape=img_shape, name='images_input')
+
+        # Before entering the first dense block, a convolution with 16 (or twice the growth rate for DenseNet-BC) output channels is
+        # performed on the input images. For convolutional layers with kernel size 3×3, each side of the inputs is zero-padded
+        # by one pixel to keep the feature-map size fixed.
+        conv2d_1 = Convolution2D(filters=k, kernel_size=(3,3), use_bias=False, padding='same')(x)
+
+        dense_block_1 = self.dense_block_v2(conv2d_1, k, l)
+        transition_layer_1 = self.transition_layer_v2(dense_block_1, k)
+
+        dense_block_2 = self.dense_block_v2(transition_layer_1, k, l)
+        transition_layer_2 = self.transition_layer_v2(dense_block_2, k)
+
+        dense_block_3 = self.dense_block_v2(transition_layer_2, k, l)
+        transition_layer_3 = self.transition_layer_v2(dense_block_3, k)
+
+        dense_block_4 = self.dense_block_v2(transition_layer_3, k, l)
+        output = self.output_layer_v2(dense_block_4)
+
+        model = Model(inputs=[x], outputs=[output])
+        model.summary()
+
+
+        print('LearningRate: {}'.format(self.config.learning_rate))
+        model.compile(
+                loss='categorical_crossentropy',
+                # optimizer=tf.keras.optimizers.RMSprop(lr=2e-5),
+                # optimizer=tf.keras.optimizers.RMSprop(lr=self.config.learning_rate),
+                optimizer=tf.keras.optimizers.Adam(lr=self.config.learning_rate),
+                # optimizer=tf.keras.optimizers.Adam(),
+                # optimizer=tf.keras.optimizers.SGD(),
+                metrics=['accuracy'])
+
+        return model
+
+
+    ### DENSENET ###
     def dense_block(self, x, k, l):
         t = x
         for i in range(l):
@@ -96,9 +213,7 @@ class ModelDensenet(BaseModel):
         output = Dense(self.config.num_classes, activation='softmax')(flat)
         return output
 
-
     def dense_model_fn(self):
-
         # TODO: _aSk Check order
         img_shape = (self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels)
 
@@ -139,7 +254,6 @@ class ModelDensenet(BaseModel):
         return model
 
 
-
     # def model_fn(self, features, labels, mode, params, config):
     def model_fn(self):
 
@@ -158,7 +272,6 @@ class ModelDensenet(BaseModel):
         # model.add(layers.Dense(self.config.num_classes, activation='sigmoid'))
         # conv_base.trainable = False
   	
-
 
         model = Sequential()
 

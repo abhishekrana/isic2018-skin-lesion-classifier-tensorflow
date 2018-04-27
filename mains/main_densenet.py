@@ -81,8 +81,14 @@ def main():
     # checkpoints_path = os.path.join('output', config.exp_name, 'checkpoints')
     checkpoints_path = os.path.join('output', config.exp_name, 'checkpoints', 'keras')
 
+
+    ## TRAINING
+    if (args.mode == 'train'):
+        trainer.train()
+
+
     ## EVALUATION
-    if (args.mode == 'eval'):
+    elif (args.mode == 'eval'):
         last_checkpoint = None
         while(True):
 
@@ -102,13 +108,13 @@ def main():
 
             trainer.evaluate()
 
+
     ## PREDICTION
     elif (args.mode == 'predict'):
         trainer.predict()
 
-    ## TRAINING
     else:
-        trainer.train()
+        print("ERROR: Unknown mode")
 
 
 if __name__ == '__main__':
