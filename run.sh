@@ -1,6 +1,7 @@
 
-EXP_NAME='cifar10'
-CONFIG_FILE='configs/config_cifar10_small.json'
+# EXP_NAME='cifar10'
+# CONFIG_FILE='configs/config_cifar10_small.json'
+CONFIG_FILE='configs/config_cifar10.json'
 
 EXP_FILE='mains/main_densenet.py'
 

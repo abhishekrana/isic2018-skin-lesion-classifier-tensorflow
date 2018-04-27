@@ -96,12 +96,13 @@ class TFRecordsDensenet(BaseTFRecords):
 
 ### MAIN ###
 if __name__ == '__main__':
-    # args = utils.get_args()
-    # config = process_config(args.config)
+    try:
+        args = utils.get_args()
+        config = process_config(args.config)
 
-    config_file = 'configs/config_densenet.json'
-    config = process_config(config_file)
+    except:
+        print("missing or invalid arguments")
+        config_file = 'configs/config_densenet.json'
+        config = process_config(config_file)
 
     tfrecords_cfiar10 = TFRecordsDensenet(config)
-
-

@@ -1,8 +1,3 @@
-# Tensorflow_TFRecords_Estimator_Pipeline
-A pipeline/template for
-- Converting dataset to TFRecords.
-- Training and evaluating multi-class image classifier using custom tensorflow estimator.
-
 ## Requirements
 Tensorflow >= 1.4.0
 
@@ -27,41 +22,52 @@ pip install keras
 ```
 
 ## Dataset
-Download knifey-spoony dataset
+Download dataset from https://challenge2018.isic-archive.com/task3/
+
+Update input_dataset_path and input_dataset_labels_file_path variables in the following script and run it
 ```sh
 cd scripts
-./download_dataset_knifey_spoony.sh
+./download_dataset_densenet.py
+```
+Dataset should now be in the following format
+```
+densenet
+├── test
+│   ├── AKIEC
+│   ├── BCC
+│   ├── BKL
+│   ├── DF
+│   ├── MEL
+│   ├── NV
+│   └── VASC
+└── train
+    ├── AKIEC
+    ├── BCC
+    ├── BKL
+    ├── DF
+    ├── MEL
+    ├── NV
+    └── VASC
 ```
 
-## Train and evaluate
+## Generate tensorflow records
+```
+python data_handler/tfrecords_densenet.py -c configs/config_densenet.json
+```
+
+## Train
 ```sh
-./run.sh
+./run.sh 1
 ```
 
-## For image classification on new dataset
-* Place the new dataset inside datasets folder. Images of each class should be in be in different folder.
-
-Example:
+## Evaluate
 ```sh
-datasets
-  knifey_spoony_vanilla
-    train
-      forky
-      knifey
-      spoony
-    test
-      forky
-      knifey
-      spoony
+./run.sh 2
 ```
 
-* Modify configs/config_knifey_spoony.json "labels", "dataset_path_train" and "dataset_path_test" fields.
+## Predict
+```sh
+./run.sh 3
+```
 
-* Modify models/model_knifey_spoony.py model_fn() as per requirement.
 
-* ./run.sh
-
-## Acknowledgement
-https://github.com/Hvass-Labs/TensorFlow-Tutorials/blob/master/18_TFRecords_Dataset_API.ipynb
-
-https://github.com/MrGemy95/Tensorflow-Project-Template
