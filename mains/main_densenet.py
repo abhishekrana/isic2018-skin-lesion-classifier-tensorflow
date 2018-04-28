@@ -4,6 +4,8 @@
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
 from tensorflow.python import debug as tf_debug
+import logging
+import datetime
 
 import os
 import shutil
@@ -11,7 +13,6 @@ import time
 import random
 import numpy as np
 os.sys.path.append('./')
-os.sys.path.append('Classification/')
 
 
 from data_handler.data_generator_densenet import DataGeneratorDensenet
@@ -27,21 +28,24 @@ def main():
     # Capture the config path from the run arguments then process the json configuration file
     try:
         args = utils.get_args()
-        config = process_config(args.config)
-
+        config = process_config(args)
     except:
         print("missing or invalid arguments")
         config_file = 'configs/config_densenet.json'
-        config = process_config(config_file)
+        config = process_config(args)
 
     if not os.path.exists(config.dataset_path_train):
         print(config.dataset_path_train)
         print('ERROR: Dataset not found')
+        exit(1)
 
-
-    ## Set log levels
+    # Initialize Logger
+    utils.logger_init(config, logging.DEBUG) 
     tf.logging.set_verbosity(tf.logging.DEBUG)
 
+
+    ## Register signal handler
+    utils.signal_handler(config)
 
     ## Set seed values to reproduce results
     random.seed(config.seed)
@@ -49,10 +53,13 @@ def main():
 
 
     ## Create output dirs
-    # utils.remove_dirs([os.path.join('output', config.exp_name)])
+    # utils.remove_dirs([os.path.join(config.output_path, config.exp_name)])
     utils.create_dirs([config.summary_dir, config.checkpoint_dir, config.tfrecords_path_train,
                       config.tfrecords_path_val, config.tfrecords_path_test])
 
+    ## Save code
+    utils.save_code(config)
+    
 
     ## Create tensorboard logger
     # logger = TFLogger(sess, config)
@@ -61,7 +68,10 @@ def main():
     sess=''
     logger=''
     ## Create TF Records
-    # TFRecordsDensenet(config)
+    if (config.mode == 'tfr'):
+        TFRecordsDensenet(config)
+        exit(0)
+
 
     ## Create data generator using TF Records
     data = DataGeneratorDensenet(config)
@@ -75,30 +85,33 @@ def main():
     trainer = TrainerDensenet(sess, model, data, config, logger)
 
 
-    print('MODE: {}'.format(args.mode))
-    # checkpoints_path = os.path.join('output', config.exp_name, 'checkpoints')
-    checkpoints_path = os.path.join('output', config.exp_name, 'checkpoints', 'keras')
+    ## TODO: _aSk Check why adding keras needed?
+    config.checkpoint_dir = os.path.join(config.checkpoint_dir, 'keras')
 
+    timestamp_start = datetime.datetime.now().strftime("%Y-%m-%d-%H_%M_%S")
+    logging.debug('timestamp_start {}'.format(timestamp_start))
+    logging.debug('mode {}'.format(config.mode))
+    logging.debug('\nConfiguration: \n{}'.format(config))
 
     ## TRAINING
-    if (args.mode == 'train'):
+    if (config.mode == 'train'):
         trainer.train()
 
 
     ## EVALUATION
-    elif (args.mode == 'eval'):
+    elif (config.mode == 'eval'):
         last_checkpoint = None
         while(True):
 
-            latest_checkpoint = tf.train.latest_checkpoint(checkpoints_path)
+            latest_checkpoint = tf.train.latest_checkpoint(config.checkpoints_dir)
 
             if latest_checkpoint is None:
-                print('No checkpoint does not exist {}'.format(last_checkpoint))
+                logging.debug('No checkpoint does not exist {}'.format(last_checkpoint))
                 time.sleep(5)
                 continue
 
             if last_checkpoint == latest_checkpoint:
-                print('Sleeping latest_checkpoint {}'.format(latest_checkpoint))
+                logging.debug('Sleeping latest_checkpoint {}'.format(latest_checkpoint))
                 time.sleep(5)
                 continue
 
@@ -108,11 +121,11 @@ def main():
 
 
     ## PREDICTION
-    elif (args.mode == 'predict'):
+    elif (config.mode == 'predict'):
         trainer.predict()
 
     else:
-        print("ERROR: Unknown mode")
+        logging.debug("ERROR: Unknown mode")
 
 
 if __name__ == '__main__':

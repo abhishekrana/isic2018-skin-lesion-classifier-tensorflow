@@ -22,9 +22,14 @@ def get_config_from_json(json_file):
     return config, config_dict
 
 
-def process_config(json_file):
+def process_config(args):
+    json_file = args.config_file
     config, _ = get_config_from_json(json_file)
-    config.summary_dir = os.path.join('output', config.exp_name, "summary/")
-    config.checkpoint_dir = os.path.join('output', config.exp_name, "checkpoints/")
+
+    config.mode = args.mode
+    config.config_file = args.config_file
+    config.summary_dir = os.path.join(config.output_path, config.exp_name, "summary/")
+    config.checkpoint_dir = os.path.join(config.output_path, config.exp_name, "checkpoints/")
+
     return config
 

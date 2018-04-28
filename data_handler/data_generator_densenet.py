@@ -6,6 +6,7 @@ import numpy as np
 import tensorflow as tf
 import glob
 import pudb
+import logging
 
 import utils.utils as utils
 import utils.utils_image as utils_image
@@ -122,7 +123,7 @@ class DataGeneratorDensenet(BaseData):
 
         # Get the next batch of images and labels.
         images_batch, labels_batch = iterator.get_next()
-        print('labels_batch', labels_batch)
+        logging.debug('labels_batch {}'.format(labels_batch))
 
 
         # The convolutional layers expect 4-rank tensors but images_batch is a 2-rank tensor, so reshape it.
@@ -165,19 +166,23 @@ if __name__ == '__main__':
 
     try:
         args = utils.get_args()
-        config = process_config(args.config)
+        config = process_config(args)
     except:
         print("missing or invalid arguments")
         config_file = 'configs/config_densenet.json'
-        config = process_config(config_file)
+        config = process_config(args)
+
+    # Initialize Logger
+    utils.logger_init(config, logging.DEBUG) 
+
 
     filenames_regex = os.path.join(config.tfrecords_path_train, '*.tfr')
     filenames = glob.glob(filenames_regex)
-    print('filenames', filenames)
+    logging.debug('filenames {}'.format(filenames))
 
     data_generator_densenet = DataGeneratorDensenet(config)
     next_batch = data_generator_densenet.input_fn(filenames=filenames, train=True)
-    print('next_batch', next_batch)
+    logging.debug('next_batch {}'.format(next_batch))
 
     with tf.Session() as sess:
 

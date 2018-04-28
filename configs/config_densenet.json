@@ -39,6 +39,10 @@
   "debug_train_images_count": 0,
   "debug_val_images_count": 0,
   "debug_test_images_count": 0,
-  "seed": 7
+  "seed": 7,
+
+  "output_path": "output",
+  "config_file": "None",
+  "mode": "None"
 }
 

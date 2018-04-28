@@ -5,9 +5,6 @@
 import os
 os.sys.path.append('./')
 os.sys.path.append('../')
-os.sys.path.append('Classification')
-
-print(os.getcwd())
 
 
 from base.base_tfrecords import BaseTFRecords
@@ -102,7 +99,7 @@ class TFRecordsDensenet(BaseTFRecords):
             return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
         else:
-            print('ERROR: Unknown type of data: {}'.format(type(value[0])))
+            log.error('ERROR: Unknown type of data: {}'.format(type(value[0])))
             exit(1)
 
 
@@ -112,10 +109,13 @@ if __name__ == '__main__':
 
     try:
         args = utils.get_args()
-        config = process_config(args.config)
+        config = process_config(args)
     except:
         print("missing or invalid arguments")
         config_file = 'configs/config_densenet.json'
-        config = process_config(config_file)
+        config = process_config(args)
+
+    # Initialize Logger
+    utils.logger_init(config, logging.DEBUG) 
 
     tfrecords_cfiar10 = TFRecordsDensenet(config)
