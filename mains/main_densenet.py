@@ -33,7 +33,6 @@ def main():
         print("missing or invalid arguments")
         config_file = 'configs/config_densenet.json'
         config = process_config(config_file)
-        # exit(0)
 
     if not os.path.exists(config.dataset_path_train):
         print(config.dataset_path_train)
@@ -52,7 +51,7 @@ def main():
     ## Create output dirs
     # utils.remove_dirs([os.path.join('output', config.exp_name)])
     utils.create_dirs([config.summary_dir, config.checkpoint_dir, config.tfrecords_path_train,
-                      config.tfrecords_path_test])
+                      config.tfrecords_path_val, config.tfrecords_path_test])
 
 
     ## Create tensorboard logger
@@ -62,7 +61,6 @@ def main():
     sess=''
     logger=''
     ## Create TF Records
-    ## TODO: Regenerate records everytime `batch_size` is changed
     # TFRecordsDensenet(config)
 
     ## Create data generator using TF Records

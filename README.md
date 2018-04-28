@@ -26,8 +26,7 @@ Download dataset from https://challenge2018.isic-archive.com/task3/
 
 Update input_dataset_path and input_dataset_labels_file_path variables in the following script and run it
 ```sh
-cd scripts
-./download_dataset_densenet.py
+python scripts/download_dataset_densenet.py -c configs/config_densenet.json
 ```
 Dataset should now be in the following format
 ```

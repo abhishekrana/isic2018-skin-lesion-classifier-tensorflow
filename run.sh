@@ -1,20 +1,38 @@
 
 # EXP_NAME='cifar10'
 # CONFIG_FILE='configs/config_cifar10_small.json'
-CONFIG_FILE='configs/config_cifar10.json'
+# CONFIG_FILE='configs/config_cifar10.json'
 
+CONFIG_FILE='configs/config_densenet.json'
+TF_RECORD_FILE='data_handler/tfrecords_densenet.py'
 EXP_FILE='mains/main_densenet.py'
 
+TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+
+# Generate TF Record
+if [[ $1 -eq 0 ]]; then
+	echo "###############"
+	echo "#  TF Record  #"
+	echo "###############"
+	python $TF_RECORD_FILE -c $CONFIG_FILE
 
 # Train
-if [[ $1 -eq 1 ]]; then
+elif [[ $1 -eq 1 ]]; then
 	echo "###########"
 	echo "#  Train  #"
 	echo "###########"
 	pkill -9 tensorboard
-	rm -vrf output/*
+	# rm -vrf output/*
+	while true; do
+		read -p "Save last run output?" response
+		case $response in
+			[Yy]* ) mv -v output $TIMESTAMP"_output"; break;;
+			[Nn]* ) rm -vrf output/*;;
+			* ) echo "Please answer y or n.";;
+		esac
+	done
 	tensorboard --logdir=../output &
-	python $EXP_FILE -m 'train' -c $CONFIG_FILE
+	python $EXP_FILE -m train -c $CONFIG_FILE
 
 # Val
 elif [[ $1 -eq 2 ]]; then

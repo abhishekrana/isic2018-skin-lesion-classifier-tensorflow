@@ -4,7 +4,7 @@
 import tensorflow as tf
 import numpy as np
 import os
-from PIL import Image
+from PIL import Image, ImageOps
 import pudb
 
 import utils.utils as utils
@@ -30,14 +30,14 @@ class BaseTFRecords():
 
 
     def wrap_data_image(self, image_path, output_path=None):
-
-        ## Convert the image to raw bytes.
-        # TODO: _aSk check order
-        # img_size = (self.config.tfr_image_width, self.config.tfr_image_height)
-        img_size = (self.config.tfr_image_height, self.config.tfr_image_width)
-
+        """
+        Convert the image to raw bytes.
+        """
         img = Image.open(image_path)
-        img = img.resize(size=img_size, resample=Image.LANCZOS)
+
+        ## Center crop and resize image
+        img = ImageOps.fit(img, (self.config.tfr_image_width, self.config.tfr_image_height), Image.LANCZOS, 0, (0.5, 0.5))
+
         img = np.array(img)
 
         if output_path is not None:
@@ -51,25 +51,42 @@ class BaseTFRecords():
 
     def dataset_to_tfrecords(self, data, output_path):
 
-        # Number of images. Used when printing the progress.
+        ## Number of images. Used when printing the progress.
         num_images = len(data['image'])
 
-        # TODO: aSk: Handle case when images do not fit batch
         batch_size = self.config.tfr_images_per_record
         iters = int(num_images/batch_size)
-        print('num_images: {}'.format(num_images))
+        print('\nnum_images: {}'.format(num_images))
         print('batch_size: {}'.format(batch_size))
-        print('iters: {}'.format(iters))
 
+        idx_start = 0
+        idx_end = 0
         for iter_no in range(iters):
             idx_start = iter_no * batch_size
             idx_end = idx_start + batch_size
+            print('\nidx:[{}-{}]'.format(idx_start, idx_end))
 
             output_path_mod = os.path.join(output_path, 'record_' + str(iter_no) + '.tfr')
             self.create_tfrecord(data, idx_start, idx_end, output_path_mod, iter_no)
 
             # Print the percentage-progress.
             utils.print_progress(count=idx_start, total=num_images)
+
+        ## For images < batch_size and 
+        ## For images which do not fit the last batch
+        idx_start = iters * batch_size
+        idx_end = idx_start + (num_images % batch_size)
+        print('\nidx:[{}-{}]'.format(idx_start, idx_end))
+        if(num_images % batch_size):
+            output_path_mod = os.path.join(output_path, 'record_' + str(iters) + '.tfr')
+            self.create_tfrecord(data, idx_start, idx_end, output_path_mod, iters)
+
+            # Print the percentage-progress.
+            utils.print_progress(count=idx_start, total=num_images)
+
+        print('\n')
+
+
 
 
     def create_tfrecord(self, data, idx_start, idx_end, output_path, iter_no):

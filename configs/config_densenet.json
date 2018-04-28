@@ -5,16 +5,21 @@
   "num_classes":7,
 
   "dataset_path_train": "datasets/densenet/train",
+  "dataset_path_val": "datasets/densenet/val",
   "dataset_path_test": "datasets/densenet/test",
+  "dataset_path_image_format": "jpg",
 
   "tfrecords_path_train": "datasets/densenet_tfr/train",
+  "tfrecords_path_val": "datasets/densenet_tfr/val",
   "tfrecords_path_test": "datasets/densenet_tfr/test",
 
-  "tfr_image_width":128,
-  "tfr_image_height":128,
+  "tfr_image_width":224,
+  "tfr_image_height":224,
   "tfr_image_channels":3,
-  "tfr_images_per_record":1000,
+  "tfr_images_per_record":10000,
 
+  "batch_size": 8,
+  "data_gen_buffer_size": 2048,
   "data_gen_num_parallel_reads":4,
   "data_gen_num_parallel_calls":4,
   "data_gen_prefetch_buffer_size":2,
@@ -22,13 +27,17 @@
 
   "learning_rate": 0.0001,
   "train_num_steps":50000,
-  "batch_size": 64,
+  "X_train_save_summary_steps": 1000,
+  "X_train_save_checkpoints_steps": 5000,
+  "train_save_summary_steps": 100,
+  "train_save_checkpoints_steps": 500,
   "max_to_keep":10,
 
 
   "debug": 0,
   "debug_tf_print": 0,
   "debug_train_images_count": 0,
+  "debug_val_images_count": 0,
   "debug_test_images_count": 0,
   "seed": 7
 }

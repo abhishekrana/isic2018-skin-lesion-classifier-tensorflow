@@ -51,8 +51,9 @@ class ModelDensenet(BaseModel):
         session_config.gpu_options.allow_growth=True
         est_config =  tf.estimator.RunConfig(
                                             session_config=session_config,
-                                            save_checkpoints_steps=5000,
-                                            save_summary_steps=1000)
+                                            save_checkpoints_steps=self.config.train_save_checkpoints_steps,
+                                            save_summary_steps=self.config.train_save_summary_steps)
+        print('est_config', est_config)
 
 
         ## Tensorflow Model

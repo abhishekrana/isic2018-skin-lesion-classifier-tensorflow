@@ -5,6 +5,7 @@
 
   "dataset_path_train": "datasets/cifar10/images/train",
   "dataset_path_test": "datasets/cifar10/images/test",
+  "dataset_path_image_format": "png",
 
   "tfrecords_path_train": "datasets/cifar10_tfr/train",
   "tfrecords_path_test": "datasets/cifar10_tfr/test",

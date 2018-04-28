@@ -54,13 +54,21 @@ class TrainerDensenet(BaseTrain):
         if not filenames:
             print('ERROR: No .tfr files found')
             exit(1)
-        return self.data.input_fn(filenames=filenames, train=True)
+        return self.data.input_fn(filenames=filenames, train=True, batch_size=self.config.batch_size, buffer_size=self.config.data_gen_buffer_size)
 
 
     def evaluate(self):
+        """
+        Estimator.evaluate(input_fn, steps=None, hooks=None, checkpoint_path=None, name=None)
+        """
         print('\n=========================')
         print('EVAL [dataset=train]')
         self.model.model_estimator.evaluate(input_fn=lambda: self.eval_input_fn(self.config.tfrecords_path_train), name="train")
+
+        print('\n=========================')
+        print('EVAL [dataset=val]')
+        self.model.model_estimator.evaluate(input_fn=lambda: self.eval_input_fn(self.config.tfrecords_path_val), name="val")
+        print('\n')
 
         print('\n=========================')
         print('EVAL [dataset=test]')
@@ -74,7 +82,7 @@ class TrainerDensenet(BaseTrain):
         if not filenames:
             print('ERROR: No .tfr files found')
             exit(1)
-        return self.data.input_fn(filenames=filenames, train=False)
+        return self.data.input_fn(filenames=filenames, train=False, batch_size=self.config.batch_size, buffer_size=self.config.data_gen_buffer_size)
 
 
     def predict(self):

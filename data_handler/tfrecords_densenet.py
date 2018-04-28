@@ -26,17 +26,24 @@ class TFRecordsDensenet(BaseTFRecords):
     def __init__(self, config):
         super(TFRecordsDensenet, self).__init__(config)
 
+        utils.create_dirs([config.tfrecords_path_train, config.tfrecords_path_val, config.tfrecords_path_test])
+
         ## Read dataset
         image_paths_train, gt_labels_train = self.read_dataset(self.config.dataset_path_train)
+        image_paths_val, gt_labels_val = self.read_dataset(self.config.dataset_path_val)
         image_paths_test, gt_labels_test = self.read_dataset(self.config.dataset_path_test)
 
         image_paths_train, gt_labels_train  = utils.shuffle_data(image_paths_train, gt_labels_train)
+        image_paths_val, gt_labels_val  = utils.shuffle_data(image_paths_val, gt_labels_val)
         image_paths_test, gt_labels_test  = utils.shuffle_data(image_paths_test, gt_labels_test)
 
         ## For debugging on smaller dataset
         if config.debug_train_images_count != 0:
             image_paths_train = image_paths_train[0:config.debug_train_images_count]
             gt_labels_train = gt_labels_train[0:config.debug_train_images_count]
+        if config.debug_val_images_count != 0:
+            image_paths_val = image_paths_val[0:config.debug_val_images_count]
+            gt_labels_val = gt_labels_val[0:config.debug_val_images_count]
         if config.debug_test_images_count != 0:
             image_paths_test = image_paths_test[0:config.debug_test_images_count]
             gt_labels_test = gt_labels_test[0:config.debug_test_images_count]
@@ -49,6 +56,12 @@ class TFRecordsDensenet(BaseTFRecords):
             }
         self.dataset_to_tfrecords(data=data, output_path=self.config.tfrecords_path_train)
 
+        ## Convert val dataset to TFRecord
+        data = {
+            'image': image_paths_val,
+            'label': gt_labels_val
+            }
+        self.dataset_to_tfrecords(data=data, output_path=self.config.tfrecords_path_val)
 
         ## Convert test dataset to TFRecord
         data = {
@@ -96,10 +109,10 @@ class TFRecordsDensenet(BaseTFRecords):
 
 ### MAIN ###
 if __name__ == '__main__':
+
     try:
         args = utils.get_args()
         config = process_config(args.config)
-
     except:
         print("missing or invalid arguments")
         config_file = 'configs/config_densenet.json'

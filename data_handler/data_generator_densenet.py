@@ -18,6 +18,14 @@ class DataGeneratorDensenet(BaseData):
         super(DataGeneratorDensenet, self).__init__(config)
 
 
+    def _augment_helper(image):
+        # image = tf.slice(input_tensor, [i, 0, 0, 0], [1, 32, 32, 3])[0]
+        image = tf.image.random_flip_left_right(image)
+        image = tf.image.random_brightness(image, max_delta=63)
+        image = tf.image.random_contrast(image, lower=0.2, upper=1.8)
+        image = tf.expand_dims(image, 0)
+        return image
+
     def parse_fn(self, serialized):
         """Parse TFRecords and perform simple data augmentation."
         https://github.com/tensorflow/tensorflow/blob/r1.7/tensorflow/python/ops/parsing_ops.py
@@ -155,12 +163,13 @@ class DataGeneratorDensenet(BaseData):
 
 if __name__ == '__main__':
 
-    # args = utils.get_args()
-    # config = process_config(args.config)
-
-    config_file = 'configs/config_densenet.json'
-    # config_file = 'configs/config_cifar10.json'
-    config = process_config(config_file)
+    try:
+        args = utils.get_args()
+        config = process_config(args.config)
+    except:
+        print("missing or invalid arguments")
+        config_file = 'configs/config_densenet.json'
+        config = process_config(config_file)
 
     filenames_regex = os.path.join(config.tfrecords_path_train, '*.tfr')
     filenames = glob.glob(filenames_regex)
