@@ -96,4 +96,10 @@ class BaseTFRecords():
                 # Write the serialized data to the TFRecords file.
                 writer.write(serialized)
 
-
+    def rotate_image(image):
+        image_path = Image.open(image)
+        image_array = np.array(image_path)
+        rotated_image1 = np.rot90(image_array)
+        rotated_image2 = np.rot90(rotated_image1)
+        rotated_image3 = np.rot90(rotated_image2)
+        return [image_array, rotated_image1, rotated_image2, rotated_image3]
