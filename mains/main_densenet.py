@@ -103,7 +103,7 @@ def main():
         last_checkpoint = None
         while(True):
 
-            latest_checkpoint = tf.train.latest_checkpoint(config.checkpoints_dir)
+            latest_checkpoint = tf.train.latest_checkpoint(config.checkpoint_dir)
 
             if latest_checkpoint is None:
                 logging.debug('No checkpoint does not exist {}'.format(last_checkpoint))

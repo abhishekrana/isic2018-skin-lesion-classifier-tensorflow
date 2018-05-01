@@ -1,12 +1,18 @@
+# from keras.engine import Layer, InputSpec
 
-#https://github.com/flyyufelix/DenseNet-Keras
-
-from keras.engine import Layer, InputSpec
+import tensorflow as tf
+from tensorflow.python.keras.layers import Layer, InputSpec
 try:
-    from keras import initializations
+    from tensorflow.python.keras import initializations
+    # from keras import initializations
 except ImportError:
-    from keras import initializers as initializations
-import keras.backend as K
+    from tensorflow.python.keras import initializers as initializations
+    # from keras import initializers as initializations
+
+# import keras.backend as K
+from tensorflow.python.keras import backend as K
+
+import pudb
 
 class Scale(Layer):
     '''Custom Layer for DenseNet used for BatchNormalization.
@@ -53,9 +59,14 @@ class Scale(Layer):
         # Tensorflow >= 1.0.0 compatibility
         self.gamma = K.variable(self.gamma_init(shape), name='{}_gamma'.format(self.name))
         self.beta = K.variable(self.beta_init(shape), name='{}_beta'.format(self.name))
-        #self.gamma = self.gamma_init(shape, name='{}_gamma'.format(self.name))
-        #self.beta = self.beta_init(shape, name='{}_beta'.format(self.name))
-        self.trainable_weights = [self.gamma, self.beta]
+        # self.gamma = self.gamma_init(shape, name='{}_gamma'.format(self.name))
+        # self.beta = self.beta_init(shape, name='{}_beta'.format(self.name))
+
+        # _aSk
+        # self.trainable_weights = [self.gamma, self.beta]
+        self.add_weight(name='{}_gamma'.format(self.name), shape=shape, initializer=self.gamma_init)
+        self.add_weight(name='{}_beta'.format(self.name), shape=shape, initializer=self.beta_init)
+
 
         if self.initial_weights is not None:
             self.set_weights(self.initial_weights)

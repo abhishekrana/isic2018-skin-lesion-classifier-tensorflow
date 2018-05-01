@@ -106,6 +106,8 @@ class TrainerDensenet(BaseTrain):
         # Load batch of images in float32 format from list of image names
         images = np.array([np.array(Image.open(image_path), dtype=np.float32) for image_path in image_paths_list])
 
+        # TODO: Maybe change from RGB to BGR format as saved weights have this format
+
         predict_input_fn = tf.estimator.inputs.numpy_input_fn(
                 x={"image": images},
                 num_epochs=1,

@@ -5,7 +5,9 @@ import tensorflow as tf
 import numpy as np
 import os
 from PIL import Image, ImageOps
+import logging
 import pudb
+import cv2
 
 import utils.utils as utils
 import utils.utils_image as utils_image
@@ -33,6 +35,10 @@ class BaseTFRecords():
         """
         Convert the image to raw bytes.
         """
+        # Color image loaded by OpenCV is in BGR mode
+        # im = cv2.resize(cv2.imread('resources/cat.jpg'), (224, 224)).astype(np.float32)
+
+        # image mode=RGB size=600x450
         img = Image.open(image_path)
 
         ## Center crop and resize image

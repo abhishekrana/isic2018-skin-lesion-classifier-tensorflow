@@ -12,6 +12,7 @@ import utils.utils as utils
 import utils.utils_image as utils_image
 from utils.config import process_config
 
+from tensorflow.python.keras._impl.keras.applications import imagenet_utils
 
 
 class DataGeneratorDensenet(BaseData):
@@ -19,7 +20,34 @@ class DataGeneratorDensenet(BaseData):
         super(DataGeneratorDensenet, self).__init__(config)
 
 
-    def _augment_helper(image):
+    def data_preprocessing(self, image):
+        logging.debug('image {}'.format(image))
+
+
+        image = tf.reshape(image, [self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels])
+
+        ## Densenet specific
+        # TODO: _aSk As per test_inference.py, trained weights look like to be in BGR format. Verify this.
+        ## Subtract mean pixel and multiple by scaling constant 
+        # https://github.com/flyyufelix/DenseNet-Keras/blob/master/test_inference.py
+        # https://github.com/shicai/DenseNet-Caffe
+        # Convert RGB to BGR
+        # red, green, blue = tf.split(axis=2, num_or_size_splits=3, value=image)
+        # assert red.get_shape().as_list() == [224, 224, 1]
+        # assert green.get_shape().as_list() == [224, 224, 1]
+        # assert blue.get_shape().as_list() == [224, 224, 1]
+        # image_bgr = tf.concat(axis=2, values=[
+        #     blue - self.config.densenet_mean_b,
+        #     green - self.config.densenet_mean_g,
+        #     red - self.config.densenet_mean_r,
+	# ])
+        # image_bgr_scaled = image_bgr * self.config.densenet_scale
+        # return image_bgr_scaled
+
+        return image
+
+    def data_augmentation(self, image):
+
         # image = tf.slice(input_tensor, [i, 0, 0, 0], [1, 32, 32, 3])[0]
         image = tf.image.random_flip_left_right(image)
         image = tf.image.random_brightness(image, max_delta=63)
@@ -54,8 +82,8 @@ class DataGeneratorDensenet(BaseData):
         # The type is now uint8 but we need it to be float.
         image = tf.cast(image, tf.float32)
 
-        # Augments image using slice, reshape, resize_bilinear
-        # image = _augment_helper(image)
+        # Augments image using flip, brightness, contrast, etc
+        # image = self.data_augmentation(image)
 
         # Get the label associated with the image.
         label = parsed_example['label']
@@ -123,18 +151,41 @@ class DataGeneratorDensenet(BaseData):
 
         # Get the next batch of images and labels.
         images_batch, labels_batch = iterator.get_next()
+        logging.debug('images_batch {}'.format(images_batch))
         logging.debug('labels_batch {}'.format(labels_batch))
 
 
         # The convolutional layers expect 4-rank tensors but images_batch is a 2-rank tensor, so reshape it.
         images_batch = tf.reshape(images_batch, [-1, self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels])
+        logging.debug('images_batch {}'.format(images_batch))
+
+        # result = tf.map_fn(lambda img: tf.image.random_flip_left_right(img), images)
+
+
+        # Preprocess image batch
+        # https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/_impl/keras/applications/imagenet_utils.py
+        # images_batch = imagenet_utils.preprocess_input(images_batch, data_format=None, mode='torch')
+        images_batch = imagenet_utils.preprocess_input(images_batch, data_format=None, mode='tf')
+        logging.debug('images_batch {}'.format(images_batch))
+
+        # Preprocess image
+        # data_preprocessing_fn = lambda x: self.data_preprocessing(x) 
+        # images_batch = tf.map_fn(data_preprocessing_fn, images_batch)
+        # # images_batch = tf.map_fn(fn=lambda x: self.data_preprocessing(x), images_batch)
+        # print('images_batch', images_batch)
+
+        # Augments image using flip, brightness, contrast, etc
+        # image = self.data_augmentation(image)
+
+
 
         # Convert labels to categorical format
         labels_batch_categorical = tf.one_hot(labels_batch, self.config.num_classes)
 
         # The input-function must return a dict wrapping the images.
         # x = {'input_1': images_batch}
-        x = {'images_input': images_batch}
+        # x = {'images_input': images_batch}
+        x = {'data': images_batch}
         y = labels_batch_categorical
 
         # Print for debugging

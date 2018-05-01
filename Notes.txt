@@ -1,0 +1,39 @@
+TF 1.6 = Densenet
+
+====================
+REPO:
+https://github.com/titu1994/DenseNet
+
+RUN:
+python densenet.py
+
+ISSUE:
+File "/usr/prakt/w107/lib/tensorflow140_py352_gpu/lib/python3.5/site-packages/keras/activations.py", line 29, in softmax
+return K.softmax(x)
+File "/usr/prakt/w107/lib/tensorflow140_py352_gpu/lib/python3.5/site-packages/keras/backend/tensorflow_backend.py", line 2963, in softmax
+return tf.nn.softmax(x, axis=axis)
+
+RESOLUTION (Downgrade keras):
+pip3 install --upgrade keras==2.1.3
+
+====================
+
+
+TF 1.7 with Cuda 9.1
+
+https://github.com/mind/wheels/releases/tag/tf1.7-gpu-cuda91-nomkl
+
+virtualenv --system-site-packages -p python3 tf17_py35_cuda91_cudnn71_gpu
+source tf17_py35_cuda91_cudnn71_gpu/bin/activate
+easy_install -U pip
+pip3 install --upgrade https://github.com/mind/wheels/releases/download/tf1.7-gpu-cuda91-nomkl/tensorflow-1.7.0-cp35-cp35m-linux_x86_64.whl
+
+pip install matplotlib
+pip install bunch
+pip install pudb
+pip install tqdm
+pip install keras
+pip install opencv-python
+
+
+

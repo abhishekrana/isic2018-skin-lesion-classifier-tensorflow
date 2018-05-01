@@ -31,8 +31,8 @@ elif [[ $1 -eq 1 ]]; then
 	echo "#  Train  #"
 	echo "###########"
 	pkill -9 tensorboard
-	rm -vrf output/*
-	# tensorboard --logdir=../output &
+	rm -rf output/*
+	tensorboard --logdir=output &
 	python $EXP_FILE -m train -c $CONFIG_FILE
 
 # Val
@@ -42,7 +42,7 @@ elif [[ $1 -eq 2 ]]; then
 	echo "################"
 	# pkill -9 tensorboard
 	# rm -rf "output"$EXP_NAME"/summary"
-	# tensorboard --logdir=../output &
+	# tensorboard --logdir=output &
 	python $EXP_FILE -m 'eval' -c $CONFIG_FILE
 
 # Test

@@ -20,9 +20,11 @@ from tensorflow.python.keras.models import Model, Sequential
 from tensorflow.python.keras.layers import Dense, Dropout, Flatten, Input, AveragePooling2D, Activation
 from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, BatchNormalization
 from tensorflow.python.keras.layers import Concatenate
-from tensorflow.python.keras.optimizers import Adam
+from tensorflow.python.keras.optimizers import Adam, SGD
 
 from models.model_densenet_121 import Densenet121
+from models.model_densenet_169 import Densenet169
+from models.model_densenet_161 import Densenet161
 from models.model_densenet_custom_layers import Scale
 
 
@@ -53,7 +55,7 @@ class ModelDensenet(BaseModel):
                                             session_config=session_config,
                                             save_checkpoints_steps=self.config.train_save_checkpoints_steps,
                                             save_summary_steps=self.config.train_save_summary_steps)
-        print('est_config', est_config)
+        # print('est_config', est_config)
 
 
         ## Tensorflow Model
@@ -67,30 +69,51 @@ class ModelDensenet(BaseModel):
         ## Keras Model
         # NOTE: model_dir should be absolute path
         model_dir = os.path.join(os.getcwd(), self.config.checkpoint_dir, 'keras') 
+
         # model = self.model_fn()
         # model = self.dense_model_fn()
         # model = self.dense_model_fn_v2()
-        model = Densenet121(self.config, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.0, dropout_rate=0.0, weight_decay=1e-4, classes=self.config.num_classes, weights_path=None)
 
+        # model = Densenet169(self.config, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.0, dropout_rate=0.0, weight_decay=1e-4, classes=self.config.num_classes, weights_path=self.config.weights_path)
+        # model = Densenet121(self.config, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.0, dropout_rate=0.0, weight_decay=1e-4, classes=self.config.num_classes, weights_path=None)
+        # model = Densenet121(self.config, weights_path=self.config.weights_path)
+        # model = Densenet121(self.config, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.0, dropout_rate=0.0, weight_decay=1e-4, classes=self.config.num_classes, weights_path=self.config.weights_path)
+        # model = Densenet121(self.config, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.0, dropout_rate=0.0, weight_decay=1e-4, classes=self.config.num_classes, weights_path=None)
+        # model = Densenet121(self.config, reduction=0.5, classes=self.config.num_classes, weights_path=None)
+
+
+
+
+        img_shape = (self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels)
+
+        # 1st layer name should match with the one provided by data provider
+        x = Input(shape=img_shape, name='data')
+
+        # model = tf.keras.applications.DenseNet121(include_top=True, weights='imagenet', input_tensor=x, input_shape=None, pooling=None, classes=1000)
+        model = tf.keras.applications.DenseNet121(include_top=True, weights=None, input_tensor=x, input_shape=None, pooling=None, classes=self.config.num_classes)
+        
         model.summary()
 
 
-        print('LearningRate: {}'.format(self.config.learning_rate))
+
+        # print('LearningRate: {}'.format(self.config.learning_rate))
+        # # model.compile(optimizer='SGD', loss='categorical_crossentropy', metrics=['accuracy'])
         model.compile(
                 loss='categorical_crossentropy',
+                # optimizer=tf.keras.optimizers.RMSprop(),
                 # optimizer=tf.keras.optimizers.RMSprop(lr=2e-5),
                 # optimizer=tf.keras.optimizers.RMSprop(lr=self.config.learning_rate),
-                optimizer=tf.keras.optimizers.Adam(lr=self.config.learning_rate),
+                # optimizer=tf.keras.optimizers.SGD(lr=1e-2, decay=1e-6, momentum=0.9, nesterov=True),
                 # optimizer=tf.keras.optimizers.Adam(),
-                # optimizer=tf.keras.optimizers.SGD(),
+                optimizer=tf.keras.optimizers.Adam(lr=self.config.learning_rate),
                 metrics=['accuracy'])
-
 
 
         self.model_estimator = tf.keras.estimator.model_to_estimator(keras_model=model,
                                                                      config=est_config,
                                                                      custom_objects=params,
                                                                      model_dir=model_dir)
+
 
     ### DENSENET V2 ###
     def dense_block_v2(self, x, k, l):
@@ -378,6 +401,7 @@ class ModelDensenet(BaseModel):
             # the neural network. Optimization etc. is not needed.
             spec = tf.estimator.EstimatorSpec(mode=mode,
                                             predictions=y_pred_cls)
+
         else:
             # Otherwise the estimator is supposed to be in either
             # training or evaluation-mode. Note that the loss-function

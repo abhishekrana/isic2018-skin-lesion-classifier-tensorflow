@@ -1,14 +1,10 @@
-
-#https://github.com/flyyufelix/DenseNet-Keras
-
 # from keras.models import Model
 # from keras.layers import Input, merge, ZeroPadding2D
 # from keras.layers.core import Dense, Dropout, Activation
 # from keras.layers.convolutional import Convolution2D
 # from keras.layers.pooling import AveragePooling2D, GlobalAveragePooling2D, MaxPooling2D
 # from keras.layers.normalization import BatchNormalization
-import keras.backend as K
-
+# import keras.backend as K
 
 
 from tensorflow.python.keras.models import Model
@@ -18,11 +14,11 @@ from tensorflow.python.keras.layers import Dense, Dropout, Activation
 from tensorflow.python.keras.layers import Convolution2D
 from tensorflow.python.keras.layers import AveragePooling2D, GlobalAveragePooling2D, MaxPooling2D
 from tensorflow.python.keras.layers import BatchNormalization
-# import tensorflow.python.keras.backend as K
+from tensorflow.python.keras import backend as K
 
+import pudb
 
-# TODO: _aSk: Uncomment Scale
-
+# from custom_layers import Scale
 from models.model_densenet_custom_layers import Scale
 
 def Densenet121(config, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.0, dropout_rate=0.0, weight_decay=1e-4, classes=1000, weights_path=None):
@@ -39,7 +35,6 @@ def Densenet121(config, nb_dense_block=4, growth_rate=32, nb_filter=64, reductio
         # Returns
             A Keras model instance.
     '''
-
     eps = 1.1e-5
 
     # compute compression factor
@@ -47,16 +42,15 @@ def Densenet121(config, nb_dense_block=4, growth_rate=32, nb_filter=64, reductio
 
     # Handle Dimension Ordering for different backends
     global concat_axis
-    if K.image_dim_ordering() == 'tf':
+    # if K.image_dim_ordering() == 'tf':
+    if K.image_data_format() == 'channels_last':
       print('Tensorflow backend')
       concat_axis = 3
-      # img_input = Input(shape=(224, 224, 3), name='data')
-      ## TODO: aSk Check ordering of height and width
-      img_input = Input(shape=(config.tfr_image_height, config.tfr_image_width, config.tfr_image_channels), name='images_input')
+      img_input = Input(shape=(224, 224, 3), name='data')
     else:
+      print('ERROR: Theano backend')
       concat_axis = 1
-      # img_input = Input(shape=(3, 224, 224), name='data')
-      img_input = Input(shape=(3, 32, 32), name='images_input')
+      img_input = Input(shape=(3, 224, 224), name='data')
 
     # From architecture for ImageNet (Table 1 in the paper)
     nb_filter = 64
@@ -66,7 +60,7 @@ def Densenet121(config, nb_dense_block=4, growth_rate=32, nb_filter=64, reductio
     x = ZeroPadding2D((3, 3), name='conv1_zeropadding')(img_input)
     x = Convolution2D(nb_filter, kernel_size=(7, 7), strides=(2, 2), name='conv1', use_bias=False)(x)
     x = BatchNormalization(epsilon=eps, axis=concat_axis, name='conv1_bn')(x)
-    # x = Scale(axis=concat_axis, name='conv1_scale')(x)
+    x = Scale(axis=concat_axis, name='conv1_scale')(x)
     x = Activation('relu', name='relu1')(x)
     x = ZeroPadding2D((1, 1), name='pool1_zeropadding')(x)
     x = MaxPooling2D((3, 3), strides=(2, 2), name='pool1')(x)
@@ -84,7 +78,7 @@ def Densenet121(config, nb_dense_block=4, growth_rate=32, nb_filter=64, reductio
     x, nb_filter = dense_block(x, final_stage, nb_layers[-1], nb_filter, growth_rate, dropout_rate=dropout_rate, weight_decay=weight_decay)
 
     x = BatchNormalization(epsilon=eps, axis=concat_axis, name='conv'+str(final_stage)+'_blk_bn')(x)
-    # x = Scale(axis=concat_axis, name='conv'+str(final_stage)+'_blk_scale')(x)
+    x = Scale(axis=concat_axis, name='conv'+str(final_stage)+'_blk_scale')(x)
     x = Activation('relu', name='relu'+str(final_stage)+'_blk')(x)
     x = GlobalAveragePooling2D(name='pool'+str(final_stage))(x)
 
@@ -93,7 +87,7 @@ def Densenet121(config, nb_dense_block=4, growth_rate=32, nb_filter=64, reductio
 
     model = Model(img_input, x, name='densenet')
 
-    if weights_path is not None:
+    if (weights_path is not None) and (weights_path is not ''):
       model.load_weights(weights_path)
 
     return model
@@ -116,7 +110,7 @@ def conv_block(x, stage, branch, nb_filter, dropout_rate=None, weight_decay=1e-4
     # 1x1 Convolution (Bottleneck layer)
     inter_channel = nb_filter * 4  
     x = BatchNormalization(epsilon=eps, axis=concat_axis, name=conv_name_base+'_x1_bn')(x)
-    # x = Scale(axis=concat_axis, name=conv_name_base+'_x1_scale')(x)
+    x = Scale(axis=concat_axis, name=conv_name_base+'_x1_scale')(x)
     x = Activation('relu', name=relu_name_base+'_x1')(x)
     x = Convolution2D(inter_channel, kernel_size=(1, 1), name=conv_name_base+'_x1', use_bias=False)(x)
 
@@ -125,7 +119,7 @@ def conv_block(x, stage, branch, nb_filter, dropout_rate=None, weight_decay=1e-4
 
     # 3x3 Convolution
     x = BatchNormalization(epsilon=eps, axis=concat_axis, name=conv_name_base+'_x2_bn')(x)
-    # x = Scale(axis=concat_axis, name=conv_name_base+'_x2_scale')(x)
+    x = Scale(axis=concat_axis, name=conv_name_base+'_x2_scale')(x)
     x = Activation('relu', name=relu_name_base+'_x2')(x)
     x = ZeroPadding2D((1, 1), name=conv_name_base+'_x2_zeropadding')(x)
     x = Convolution2D(nb_filter, kernel_size=(3, 3), name=conv_name_base+'_x2', use_bias=False)(x)
@@ -153,7 +147,7 @@ def transition_block(x, stage, nb_filter, compression=1.0, dropout_rate=None, we
     pool_name_base = 'pool' + str(stage) 
 
     x = BatchNormalization(epsilon=eps, axis=concat_axis, name=conv_name_base+'_bn')(x)
-    # x = Scale(axis=concat_axis, name=conv_name_base+'_scale')(x)
+    x = Scale(axis=concat_axis, name=conv_name_base+'_scale')(x)
     x = Activation('relu', name=relu_name_base)(x)
     x = Convolution2D(int(nb_filter * compression), kernel_size=(1, 1), name=conv_name_base, use_bias=False)(x)
 
