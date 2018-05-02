@@ -16,10 +16,17 @@ def get_config_from_json(json_file):
     with open(json_file, 'r') as config_file:
         config_dict = json.load(config_file)
 
-    # Convert the dictionary to a namespace using bunch lib
-    config = Bunch(config_dict)
+    config_dict_mod = {}
+    for name, value in config_dict.items():
+        # Ignore comments
+        if name[0] != '_':
+            config_dict_mod[name] = value
 
-    return config, config_dict
+
+    # Convert the dictionary to a namespace using bunch lib
+    config = Bunch(config_dict_mod)
+
+    return config, config_dict_mod
 
 
 def process_config(args):
@@ -30,6 +37,7 @@ def process_config(args):
     config.config_file = args.config_file
     config.summary_dir = os.path.join(config.output_path, config.exp_name, "summary/")
     config.checkpoint_dir = os.path.join(config.output_path, config.exp_name, "checkpoints/")
+    config.image_shape = (config.tfr_image_height, config.tfr_image_width, config.tfr_image_channels)
 
     return config
 

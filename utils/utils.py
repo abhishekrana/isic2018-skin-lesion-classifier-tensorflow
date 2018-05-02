@@ -172,7 +172,7 @@ def one_hot_encoded(class_numbers, num_classes=None):
     return np.eye(num_classes, dtype=float)[class_numbers]
 
 
-def shuffle_data(list1, list2):
+def shuffle_data_2(list1, list2):
     """Joint shuffling of the lists"""
     permutation = np.random.permutation(len(list1))
     list1_shuffled = []
@@ -181,6 +181,13 @@ def shuffle_data(list1, list2):
         list1_shuffled.append(list1[i])
         list2_shuffled.append(list2[i])
     return list1_shuffled, list2_shuffled
+
+def shuffle_data(a, b):
+    a = np.array(a)
+    b = np.array(b)
+    assert len(a) == len(b)
+    p = np.random.permutation(len(a))
+    return a[p], b[p]
 
 
 def print_progress(count, total):

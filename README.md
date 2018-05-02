@@ -19,6 +19,9 @@ pip install bunch
 pip install pudb
 pip install tqdm
 pip install keras
+pip install ipython
+pip install ptpython
+pip install ptipython
 ```
 
 ## Dataset

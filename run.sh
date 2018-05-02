@@ -32,7 +32,7 @@ elif [[ $1 -eq 1 ]]; then
 	echo "###########"
 	pkill -9 tensorboard
 	rm -rf output/*
-	tensorboard --logdir=output &
+	# tensorboard --logdir=output &
 	python $EXP_FILE -m train -c $CONFIG_FILE
 
 # Val

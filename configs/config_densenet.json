@@ -1,20 +1,36 @@
 {
-  "exp_name": "densenet",
+  "_exp_name": "densenet",
+  "exp_name": "dogsvscats",
 
-  "labels":{"MEL": 0, "NV": 1, "BCC": 2, "AKIEC": 3, "BKL": 4, "DF": 5, "VASC": 6},
-  "num_classes":7,
+  "_labels":{"MEL": 0, "NV": 1, "BCC": 2, "AKIEC": 3, "BKL": 4, "DF": 5, "VASC": 6},
+  "_num_classes":7,
 
-  "dataset_path_train": "datasets/densenet/train",
-  "dataset_path_val": "datasets/densenet/val",
-  "dataset_path_test": "datasets/densenet/test",
+  "labels":{"cats": 0, "dogs": 1, "birds": 2},
+  "num_classes":3,
+
+  "_dataset_path_train": "datasets/densenet/train",
+  "_dataset_path_val": "datasets/densenet/val",
+  "_dataset_path_test": "datasets/densenet/test",
+  "_dataset_path_image_format": "jpg",
+
+  "dataset_path_train": "datasets/dog_vs_cat_small/train",
+  "dataset_path_val": "datasets/dog_vs_cat_small/val",
+  "dataset_path_test": "datasets/dog_vs_cat_small/test",
   "dataset_path_image_format": "jpg",
 
-  "tfrecords_path_train": "datasets/densenet_tfr/train",
-  "tfrecords_path_val": "datasets/densenet_tfr/val",
-  "tfrecords_path_test": "datasets/densenet_tfr/test",
+  "_tfrecords_path_train": "datasets/densenet_tfr/train",
+  "_tfrecords_path_val": "datasets/densenet_tfr/val",
+  "_tfrecords_path_test": "datasets/densenet_tfr/test",
 
-  "tfr_image_width":224,
-  "tfr_image_height":224,
+  "tfrecords_path_train": "datasets/dog_vs_cat_small_tfr/train",
+  "tfrecords_path_val": "datasets/dog_vs_cat_small_tfr/val",
+  "tfrecords_path_test": "datasets/dog_vs_cat_small_tfr/test",
+
+
+  "_tfr_image_width":224,
+  "_tfr_image_height":224,
+  "tfr_image_width":150,
+  "tfr_image_height":150,
   "tfr_image_channels":3,
   "tfr_images_per_record":10000,
 
@@ -27,8 +43,8 @@
 
   "learning_rate": 0.00001,
   "train_num_steps":50000,
-  "X_train_save_summary_steps": 1000,
-  "X_train_save_checkpoints_steps": 5000,
+  "_train_save_summary_steps": 1000,
+  "_train_save_checkpoints_steps": 5000,
   "train_save_summary_steps": 100,
   "train_save_checkpoints_steps": 500,
   "max_to_keep":10,
@@ -46,7 +62,7 @@
   "densenet_mean_r": 123.68,
   "densenet_scale": 0.017,
 
-  "X_weights_path": "third_party/DenseNet-Keras/imagenet_models/densenet121_weights_tf.h5",
+  "_weights_path": "third_party/DenseNet-Keras/imagenet_models/densenet121_weights_tf.h5",
   "weights_path": "",
 
   "output_path": "output",

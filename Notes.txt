@@ -37,3 +37,13 @@ pip install opencv-python
 
 
 
+=======================
+
+Changed TF library from 1.7 to 1.4
+
+tensorflow.python.framework.errors_impl.FailedPreconditionError: Attempting to use uninitialized value block1_conv1/bias
+         [[Node: block1_conv1/bias/_16 = _Send[T=DT_FLOAT, client_terminated=false, recv_device="/job:localhost/replica:0/task:0/device:CPU:0", send_device="/job:localhost/replica:0/task:0/device:GPU:0", send_device_incarnation=1, te
+		 nsor_name="edge_62_block1_conv1/bias", _device="/job:localhost/replica:0/task:0/device:GPU:0"](block1_conv1/bias)]]
+		          [[Node: dense/bias/_69 = _Recv[_start_time=0, client_terminated=false, recv_device="/job:localhost/replica:0/task:0/device:CPU:0", send_device="/job:localhost/replica:0/task:0/device:GPU:0", send_device_incarnation=1, tensor
+				  _name="edge_114_dense/bias", tensor_type=DT_FLOAT, _device="/job:localhost/replica:0/task:0/device:CPU:0"]()]]
+

@@ -50,6 +50,7 @@ def main():
     ## Set seed values to reproduce results
     random.seed(config.seed)
     np.random.seed(config.seed)
+    tf.set_random_seed(config.seed)
 
 
     ## Create output dirs

@@ -13,6 +13,8 @@ import utils.utils_image as utils_image
 from utils.config import process_config
 
 from tensorflow.python.keras._impl.keras.applications import imagenet_utils
+# import tensorflow.python.keras.preprocessing.image as k_image
+from tensorflow.python.keras.preprocessing import image as k_image
 
 
 class DataGeneratorDensenet(BaseData):
@@ -74,21 +76,31 @@ class DataGeneratorDensenet(BaseData):
                                                  features=features)
 
         # Get the image as raw bytes.
+        image_shape = tf.stack([self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels])
         image_raw = parsed_example['image']
 
         # Decode the raw bytes so it becomes a tensor with type.
         image = tf.decode_raw(image_raw, tf.uint8)
-
-        # The type is now uint8 but we need it to be float.
         image = tf.cast(image, tf.float32)
+        image = tf.reshape(image, image_shape)
+        # TODO: _aSk VGG16 specific
+        image = tf.subtract(image, 116.779) # Zero-center by mean pixel
+        image = tf.reverse(image, axis=[2]) # 'RGB'->'BGR'
 
         # Augments image using flip, brightness, contrast, etc
         # image = self.data_augmentation(image)
 
         # Get the label associated with the image.
-        label = parsed_example['label']
+        # label = parsed_example['label']
+        # TODO: cast?
+        label = tf.cast(parsed_example['label'], tf.float32)
+        # label = tf.cast(parsed_example['label'], tf.int64)
+
 
         # The image and label are now correct TensorFlow types.
+        # data = dict(zip([input_name], [image])), [label]
+        # return data
+
         return image, label
 
 
@@ -137,6 +149,7 @@ class DataGeneratorDensenet(BaseData):
 
         # Get a batch of data with the given size.
         dataset = dataset.batch(batch_size)
+        print('dataset', dataset)
 
         # Maximum number of elements that will be buffered
         # prefetch(n) (where n is the number of elements / batches consumed by a training step)
@@ -151,13 +164,13 @@ class DataGeneratorDensenet(BaseData):
 
         # Get the next batch of images and labels.
         images_batch, labels_batch = iterator.get_next()
-        logging.debug('images_batch {}'.format(images_batch))
-        logging.debug('labels_batch {}'.format(labels_batch))
+        print('images_batch', images_batch)
+        print('labels_batch', labels_batch)
 
 
         # The convolutional layers expect 4-rank tensors but images_batch is a 2-rank tensor, so reshape it.
-        images_batch = tf.reshape(images_batch, [-1, self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels])
-        logging.debug('images_batch {}'.format(images_batch))
+        # images_batch = tf.reshape(images_batch, [-1, self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels])
+        # logging.debug('images_batch {}'.format(images_batch))
 
         # result = tf.map_fn(lambda img: tf.image.random_flip_left_right(img), images)
 
@@ -165,8 +178,8 @@ class DataGeneratorDensenet(BaseData):
         # Preprocess image batch
         # https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/_impl/keras/applications/imagenet_utils.py
         # images_batch = imagenet_utils.preprocess_input(images_batch, data_format=None, mode='torch')
-        images_batch = imagenet_utils.preprocess_input(images_batch, data_format=None, mode='tf')
-        logging.debug('images_batch {}'.format(images_batch))
+        # images_batch = imagenet_utils.preprocess_input(images_batch, data_format=None, mode='tf')
+        # logging.debug('images_batch {}'.format(images_batch))
 
         # Preprocess image
         # data_preprocessing_fn = lambda x: self.data_preprocessing(x) 
@@ -180,13 +193,14 @@ class DataGeneratorDensenet(BaseData):
 
 
         # Convert labels to categorical format
-        labels_batch_categorical = tf.one_hot(labels_batch, self.config.num_classes)
+        # labels_batch_categorical = tf.one_hot(labels_batch, self.config.num_classes)
 
         # The input-function must return a dict wrapping the images.
-        # x = {'input_1': images_batch}
+        x = {'input_1': images_batch}
         # x = {'images_input': images_batch}
-        x = {'data': images_batch}
-        y = labels_batch_categorical
+        # x = {'data': images_batch}
+        # y = labels_batch_categorical
+        y = labels_batch
 
         # Print for debugging
         # if self.config.debug_tf_print:
@@ -221,7 +235,7 @@ if __name__ == '__main__':
     except:
         print("missing or invalid arguments")
         config_file = 'configs/config_densenet.json'
-        config = process_config(args)
+        config = process_config(config_file)
 
     # Initialize Logger
     utils.logger_init(config, logging.DEBUG) 
@@ -239,9 +253,17 @@ if __name__ == '__main__':
 
         images_batch, labels_batch = sess.run(next_batch)
 
-        print('images_batch:{} shape:{}'.format(images_batch, images_batch['images_input'].shape))
-        print('labels_batch:{} shape:{}'.format(labels_batch, labels_batch.shape))
+        # print('images_batch:{} shape:{}'.format(images_batch, images_batch['images_input'].shape))
+        # print('labels_batch:{} shape:{}'.format(labels_batch, labels_batch.shape))
 
-        image = tf.keras.preprocessing.image.array_to_img(images_batch['images_input'][0])
-        image.show()
+        image = images_batch['input_1'][0]
+        label = labels_batch[0]
+        print('labels_batch', labels_batch)
+        print(image.shape)
+        print('label', label)
+        print('label', type(label))
+
+        img = k_image.array_to_img(image)
+
+        img.show()
 

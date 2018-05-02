@@ -26,51 +26,39 @@ class TFRecordsDensenet(BaseTFRecords):
         utils.create_dirs([config.tfrecords_path_train, config.tfrecords_path_val, config.tfrecords_path_test])
 
         ## Read dataset
-        image_paths_train, gt_labels_train = self.read_dataset(self.config.dataset_path_train)
-        image_paths_val, gt_labels_val = self.read_dataset(self.config.dataset_path_val)
-        image_paths_test, gt_labels_test = self.read_dataset(self.config.dataset_path_test)
+        image_paths_train, labels_train = self.read_dataset(self.config.dataset_path_train)
+        image_paths_val, labels_val = self.read_dataset(self.config.dataset_path_val)
+        image_paths_test, labels_test = self.read_dataset(self.config.dataset_path_test)
 
-        image_paths_train, gt_labels_train  = utils.shuffle_data(image_paths_train, gt_labels_train)
-        image_paths_val, gt_labels_val  = utils.shuffle_data(image_paths_val, gt_labels_val)
-        image_paths_test, gt_labels_test  = utils.shuffle_data(image_paths_test, gt_labels_test)
+        image_paths_train, labels_train  = utils.shuffle_data(image_paths_train, labels_train)
+        image_paths_val, labels_val  = utils.shuffle_data(image_paths_val, labels_val)
+        image_paths_test, labels_test  = utils.shuffle_data(image_paths_test, labels_test)
 
         ## For debugging on smaller dataset
         if config.debug_train_images_count != 0:
             image_paths_train = image_paths_train[0:config.debug_train_images_count]
-            gt_labels_train = gt_labels_train[0:config.debug_train_images_count]
+            labels_train = labels_train[0:config.debug_train_images_count]
         if config.debug_val_images_count != 0:
             image_paths_val = image_paths_val[0:config.debug_val_images_count]
-            gt_labels_val = gt_labels_val[0:config.debug_val_images_count]
+            labels_val = labels_val[0:config.debug_val_images_count]
         if config.debug_test_images_count != 0:
             image_paths_test = image_paths_test[0:config.debug_test_images_count]
-            gt_labels_test = gt_labels_test[0:config.debug_test_images_count]
+            labels_test = labels_test[0:config.debug_test_images_count]
 
 
         ## Convert train dataset to TFRecord
-        data = {
-            'image': image_paths_train,
-            'label': gt_labels_train
-            }
-        self.dataset_to_tfrecords(data=data, output_path=self.config.tfrecords_path_train)
+        self.dataset_to_tfrecords(image_paths_train, labels_train, output_path=self.config.tfrecords_path_train)
 
         ## Convert val dataset to TFRecord
-        data = {
-            'image': image_paths_val,
-            'label': gt_labels_val
-            }
-        self.dataset_to_tfrecords(data=data, output_path=self.config.tfrecords_path_val)
+        self.dataset_to_tfrecords(image_paths_val, labels_val, output_path=self.config.tfrecords_path_val)
 
         ## Convert test dataset to TFRecord
-        data = {
-            'image': image_paths_test,
-            'label': gt_labels_test
-            }
-        self.dataset_to_tfrecords(data=data, output_path=self.config.tfrecords_path_test)
+        self.dataset_to_tfrecords(image_paths_test, labels_test, output_path=self.config.tfrecords_path_test)
 
 
     def read_dataset(self, dataset_path):
         image_paths_list = []
-        gt_labels = []
+        labels = []
 
         for label_name, label_no in self.config.labels.items():
             # Read image paths
@@ -81,9 +69,9 @@ class TFRecordsDensenet(BaseTFRecords):
             image_paths_list = image_paths_list + image_paths
 
             # Create labels
-            gt_labels = gt_labels + [label_no]*images_count
+            labels = labels + [label_no]*images_count
 
-        return image_paths_list, gt_labels
+        return image_paths_list, labels
 
 
     def wrap_data(self, key, value, output_path):
