@@ -65,6 +65,8 @@
   "_weights_path": "third_party/DenseNet-Keras/imagenet_models/densenet121_weights_tf.h5",
   "weights_path": "",
 
-  "output_path": "output"
+  "output_path": "output",
+
+  "num_epoch": 1
 }
 

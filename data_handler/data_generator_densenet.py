@@ -186,14 +186,15 @@ class DataGeneratorDensenet(BaseData):
 
 
         # Convert labels to categorical format
-        # labels_batch_categorical = tf.one_hot(labels_batch, self.config.num_classes)
+        labels_batch = tf.cast(labels_batch, tf.int64)
+        labels_batch_categorical = tf.one_hot(labels_batch, self.config.num_classes)
 
         # The input-function must return a dict wrapping the images.
         x = {'input_1': images_batch}
         # x = {'images_input': images_batch}
         # x = {'data': images_batch}
-        # y = labels_batch_categorical
-        y = labels_batch
+        y = labels_batch_categorical
+        # y = labels_batch
 
         # Print for debugging
         # if self.config.debug_tf_print:

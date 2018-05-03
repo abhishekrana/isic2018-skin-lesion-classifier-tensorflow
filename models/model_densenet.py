@@ -69,8 +69,8 @@ class ModelDensenet(BaseModel):
 
         model.summary()
 
-        # model.compile(loss='categorical_crossentropy',
-        model.compile(loss='sparse_categorical_crossentropy',
+        model.compile(loss='categorical_crossentropy',
+        # model.compile(loss='sparse_categorical_crossentropy',
                 optimizer=tf.keras.optimizers.RMSprop(lr=2e-5),
                 metrics=['acc'])
 
@@ -78,6 +78,7 @@ class ModelDensenet(BaseModel):
                                                                      config=est_config,
                                                                      custom_objects=params,
                                                                      model_dir=model_dir)
+        return model
 
     def model_vgg16(self):
 
