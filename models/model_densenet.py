@@ -69,7 +69,6 @@ class ModelDensenet(BaseModel):
 
         model.summary()
 
-        # model.compile(loss='binary_crossentropy',
         # model.compile(loss='categorical_crossentropy',
         model.compile(loss='sparse_categorical_crossentropy',
                 optimizer=tf.keras.optimizers.RMSprop(lr=2e-5),
@@ -81,11 +80,8 @@ class ModelDensenet(BaseModel):
                                                                      model_dir=model_dir)
 
     def model_vgg16(self):
-        # https://github.com/Tony607/Keras_catVSdog_tf_estimator/blob/master/keras_estimator_vgg16-cat_vs_dog.ipynb
-        # https://github.com/Tony607/Keras_catVSdog_tf_estimator/blob/master/keras_estimator_vgg16-cat_vs_dog-TFRecord.ipynb
-        # https://github.com/fchollet/deep-learning-with-python-notebooks/blob/master/5.3-using-a-pretrained-convnet.ipynb
 
-        # img_size = (150, 150, 3)
+
         img_size = (self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels)
         conv_base = VGG16(weights='imagenet',
                         include_top=False,
@@ -94,12 +90,19 @@ class ModelDensenet(BaseModel):
         model = models.Sequential()
         model.add(conv_base)
         model.add(layers.Flatten())
-        model.add(layers.Dense(256, activation='relu'))
-        model.add(layers.Dense(self.config.num_classes, activation='sigmoid'))
+        # model.add(layers.Dense(256, activation='relu'))
+
+        model.add(layers.Dense(512, activation='relu'))
+        model.add(layers.Dense(512, activation='relu'))
+        model.add(layers.Dense(512, activation='relu'))
+        model.add(layers.Dense(512, activation='relu'))
+        model.add(layers.Dense(512, activation='relu'))
+
+        # model.add(Dropout(0.5))
+        # model.add(layers.Dense(self.config.num_classes, activation='sigmoid'))
+        model.add(layers.Dense(self.config.num_classes, activation='softmax'))
 
         conv_base.trainable = False
 
         return model
-
-
 

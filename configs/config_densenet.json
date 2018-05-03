@@ -45,16 +45,16 @@
   "train_num_steps":50000,
   "_train_save_summary_steps": 1000,
   "_train_save_checkpoints_steps": 5000,
-  "train_save_summary_steps": 100,
-  "train_save_checkpoints_steps": 500,
+  "train_save_summary_steps": 10,
+  "train_save_checkpoints_steps": 50,
   "max_to_keep":10,
 
 
   "debug": 0,
   "debug_tf_print": 0,
-  "debug_train_images_count": 0,
-  "debug_val_images_count": 0,
-  "debug_test_images_count": 0,
+  "debug_train_images_count": 16,
+  "debug_val_images_count": 16,
+  "debug_test_images_count": 16,
   "seed": 7,
 
   "densenet_mean_b": 103.94,
@@ -65,8 +65,6 @@
   "_weights_path": "third_party/DenseNet-Keras/imagenet_models/densenet121_weights_tf.h5",
   "weights_path": "",
 
-  "output_path": "output",
-  "config_file": "None",
-  "mode": "None"
+  "output_path": "output"
 }
 

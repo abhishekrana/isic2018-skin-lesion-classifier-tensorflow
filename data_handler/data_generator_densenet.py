@@ -91,15 +91,8 @@ class DataGeneratorDensenet(BaseData):
         # image = self.data_augmentation(image)
 
         # Get the label associated with the image.
-        # label = parsed_example['label']
-        # TODO: cast?
         label = tf.cast(parsed_example['label'], tf.float32)
-        # label = tf.cast(parsed_example['label'], tf.int64)
 
-
-        # The image and label are now correct TensorFlow types.
-        # data = dict(zip([input_name], [image])), [label]
-        # return data
 
         return image, label
 
@@ -234,8 +227,8 @@ if __name__ == '__main__':
         config = process_config(args)
     except:
         print("missing or invalid arguments")
-        config_file = 'configs/config_densenet.json'
-        config = process_config(config_file)
+        # config_file = 'configs/config_densenet.json'
+        # config = process_config(config_file)
 
     # Initialize Logger
     utils.logger_init(config, logging.DEBUG) 

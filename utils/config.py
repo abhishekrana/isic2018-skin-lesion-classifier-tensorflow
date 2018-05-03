@@ -26,18 +26,19 @@ def get_config_from_json(json_file):
     # Convert the dictionary to a namespace using bunch lib
     config = Bunch(config_dict_mod)
 
-    return config, config_dict_mod
+    return config
 
 
 def process_config(args):
     json_file = args.config_file
-    config, _ = get_config_from_json(json_file)
+    config = get_config_from_json(json_file)
 
     config.mode = args.mode
     config.config_file = args.config_file
     config.summary_dir = os.path.join(config.output_path, config.exp_name, "summary/")
     config.checkpoint_dir = os.path.join(config.output_path, config.exp_name, "checkpoints/")
     config.image_shape = (config.tfr_image_height, config.tfr_image_width, config.tfr_image_channels)
+    print('config', config)
 
     return config
 

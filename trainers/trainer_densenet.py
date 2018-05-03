@@ -24,8 +24,6 @@ class TrainerDensenet(BaseTrain):
 
     def train(self):
 
-        # labels_categorical = tf.keras.utils.to_categorical(labels, self.config.num_classes)
-
         filenames_regex = os.path.join(self.config.tfrecords_path_train, '*.tfr')
         filenames_train = glob.glob(filenames_regex)
         if not filenames_train:
@@ -46,7 +44,7 @@ class TrainerDensenet(BaseTrain):
                                                                     train=True, 
                                                                     batch_size=self.config.batch_size, 
                                                                     buffer_size=self.config.data_gen_buffer_size),
-                                                                    max_steps=2000
+                                                                    # max_steps=1000
                                                                     )
 
 

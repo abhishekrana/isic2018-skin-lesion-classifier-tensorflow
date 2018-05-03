@@ -1,16 +1,14 @@
 ##########################################################################################
 # Class for creating Tensorflow Records
-#  "labels":{"airplane": 0, "automobile": 1, "bird": 2, "cat": 3, "deer": 4, "dog": 5, "frog": 6, "horse": 7, "ship": 8, "truck": 9},
 ##########################################################################################
 import os
 os.sys.path.append('./')
 os.sys.path.append('../')
 
-
 from base.base_tfrecords import BaseTFRecords
 import tensorflow as tf
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 import pudb
 
 import utils.utils as utils
@@ -74,22 +72,87 @@ class TFRecordsDensenet(BaseTFRecords):
         return image_paths_list, labels
 
 
-    def wrap_data(self, key, value, output_path):
-        """
-        https://github.com/tensorflow/tensorflow/blob/r1.7/tensorflow/python/ops/parsing_ops.py
-        `tf.float32` (`FloatList`), `tf.int64` (`Int64List`), and `tf.string` (`BytesList`) are supported.
-        """
-        if key == 'image':
-            # Pass output_path as param in order to save images
-            return self.wrap_data_image(value, output_path)
+    def dataset_to_tfrecords(self, image_paths, labels, output_path):
 
-        elif key == 'label':
-            return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
+        num_images = len(image_paths)
+        batch_size = self.config.tfr_images_per_record
+        iters = int(num_images/batch_size)
+        print('\nnum_images: {}'.format(num_images))
+        print('batch_size: {}'.format(batch_size))
 
-        else:
-            log.error('ERROR: Unknown type of data: {}'.format(type(value[0])))
-            exit(1)
+        idx_start = 0
+        idx_end = 0
+        for iter_no in range(iters):
+            idx_start = iter_no * batch_size
+            idx_end = idx_start + batch_size
+            print('\nidx:[{}-{}]'.format(idx_start, idx_end))
 
+            output_path_mod = os.path.join(output_path, 'record_' + str(iter_no) + '.tfr')
+            self.create_tfrecord(image_paths, labels, idx_start, idx_end, output_path_mod, iter_no)
+
+            # Print the percentage-progress.
+            utils.print_progress(count=idx_start, total=num_images)
+
+        # For images < batch_size and 
+        # For images which do not fit the last batch
+        idx_start = iters * batch_size
+        idx_end = idx_start + (num_images % batch_size)
+        print('\nidx:[{}-{}]'.format(idx_start, idx_end))
+        if(num_images % batch_size):
+            output_path_mod = os.path.join(output_path, 'record_' + str(iters) + '.tfr')
+            self.create_tfrecord(image_paths, labels, idx_start, idx_end, output_path_mod)
+
+            # Print the percentage-progress.
+            # utils.print_progress(count=idx_start, total=num_images)
+
+        print('\n')
+
+    def create_tfrecord(self, image_paths, labels, idx_start, idx_end, output_path):
+
+        # Open a TFRecordWriter for the output-file.
+        with tf.python_io.TFRecordWriter(output_path) as writer:
+
+            for i in range(idx_start, idx_end):
+
+                utils.print_progress(count=i, total=(idx_end-idx_start))
+
+                image_path = image_paths[i]
+                label = labels[i]
+
+                # Load the image-file using matplotlib's imread function.
+                img = Image.open(image_path)
+
+                # TODO:
+                # Center crop and resize image
+                img = ImageOps.fit(img, (self.config.tfr_image_width, self.config.tfr_image_height), Image.LANCZOS, 0, (0.5, 0.5))
+                # size: The requested size in pixels, as a 2-tuple: (width, height)
+                # img = img.resize(size=(self.config.tfr_image_width, self.config.tfr_image_height))
+
+                img = np.array(img)
+
+                if output_path is not None:
+                    img_path_name = os.path.join(os.path.dirname(output_path), os.path.basename(image_path))
+                    utils_image.save_image(img, img_path_name)
+
+                # Convert the image to raw bytes.
+                img_bytes = img.tostring()
+
+                data = {
+                    'image': self.wrap_bytes(img_bytes),
+                    'label': self.wrap_int64(label)
+                    }
+
+                # Wrap the data as TensorFlow Features.
+                feature = tf.train.Features(feature=data)
+
+                # Wrap again as a TensorFlow Example.
+                example = tf.train.Example(features=feature)
+
+                # Serialize the data.
+                serialized = example.SerializeToString()
+
+                # Write the serialized data to the TFRecords file.
+                writer.write(serialized)
 
 
 ### MAIN ###
