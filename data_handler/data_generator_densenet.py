@@ -190,7 +190,8 @@ class DataGeneratorDensenet(BaseData):
         labels_batch_categorical = tf.one_hot(labels_batch, self.config.num_classes)
 
         # The input-function must return a dict wrapping the images.
-        x = {'input_1': images_batch}
+        # x = {'input_1': images_batch}
+        x = {'vgg16_input': images_batch}
         # x = {'images_input': images_batch}
         # x = {'data': images_batch}
         y = labels_batch_categorical

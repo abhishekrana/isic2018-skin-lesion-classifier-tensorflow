@@ -27,10 +27,10 @@ from tensorflow.python.keras.preprocessing import image
 from tensorflow.python.keras.applications.resnet50 import ResNet50
 from tensorflow.python.keras.applications.inception_v3 import InceptionV3
 
-from models.model_densenet_121 import Densenet121
-from models.model_densenet_169 import Densenet169
-from models.model_densenet_161 import Densenet161
-from models.model_densenet_custom_layers import Scale
+# from models.model_densenet_121 import Densenet121
+# from models.model_densenet_169 import Densenet169
+# from models.model_densenet_161 import Densenet161
+# from models.model_densenet_custom_layers import Scale
 
 
 class ModelDensenet(BaseModel):

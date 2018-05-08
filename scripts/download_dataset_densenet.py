@@ -1,6 +1,7 @@
+import os
+os.sys.path.append('./')
 import numpy as np
 import urllib.request
-import os
 import tarfile
 import pickle
 from PIL import Image
@@ -9,6 +10,7 @@ import glob
 import sys
 import csv
 from sklearn.model_selection import StratifiedKFold
+import logging
 
 import utils.utils as utils
 import utils.utils_image as utils_image
@@ -30,9 +32,9 @@ class Densenet:
         self.split_val   = 1015
         self.split_test  = 1000
 
-        logger.debug('dataset_path_name {}'.format(self.dataset_path_name)
-        logger.debug('val_images_path {}'.format(self.val_images_path)
-        logger.debug('test_images_path {}'.format(self.test_images_path)
+        # logger.debug('dataset_path_name {}'.format(self.dataset_path_name)
+		# logger.debug('val_images_path {}'.format(self.val_images_path)
+        # logger.debug('test_images_path {}'.format(self.test_images_path)
 
 
     def save_dataset(self, input_dataset_path, input_dataset_labels_file_path):
@@ -70,8 +72,8 @@ class Densenet:
                 label_one_hot_encoding = [int(round(float(row[i+1]), 0)) for i in range(7)] 
                 images_label.append(np.argmax(label_one_hot_encoding))
 
-                logging.debug('label_one_hot_encoding {}'.format(np.array(label_one_hot_encoding)))
-                logging.debug('label {}', label)
+                # logging.debug('label_one_hot_encoding {}'.format(np.array(label_one_hot_encoding)))
+                # logging.debug('label {}', label)
 
 
         ## Shuffle dataset
@@ -118,7 +120,7 @@ class Densenet:
 
 
     def display_data_distribution(self, images_labels):
-        logging.debug('Total {}'.format(len(images_labels))
+        # logging.debug('Total {}'.format(len(images_labels))
         data_dist = dict()
         for i in images_labels:
             data_dist[i] = data_dist.get(i, 0) + 1
@@ -154,20 +156,22 @@ if __name__ == '__main__':
     utils.logger_init(config, logging.DEBUG) 
 
     np.random.seed(config.seed)
-    loggin.debug('seed: {}'.format(config.seed))
+    logging.debug('seed: {}'.format(config.seed))
 
-    input_dataset_path = '/usr/data/cvpr_shared/abhishek/Practical_2/Dataset/ISIC2018/Classification/ISIC2018_Task3_Training_Input'
-    input_dataset_labels_file_path = '/usr/data/cvpr_shared/abhishek/Practical_2/Dataset/ISIC2018/Classification/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
+    # input_dataset_path = '/usr/data/cvpr_shared/abhishek/Practical_2/Dataset/ISIC2018/Classification/ISIC2018_Task3_Training_Input'
+    # input_dataset_labels_file_path = '/usr/data/cvpr_shared/abhishek/Practical_2/Dataset/ISIC2018/Classification/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
+    input_dataset_path = '/home/mlmiss2018/work/MLMI_ISIC2018/dataset/ISIC2018_Task3_Training_Input'
+    input_dataset_labels_file_path = '/home/mlmiss2018/work/MLMI_ISIC2018/dataset/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
     output_path = os.path.join('..', 'datasets', 'densenet')
 
     ## Reverse key and values of dict
     labels_val_name_dict = {v: k for k, v in config.labels.items()}
     # {0: 'MEL', 1: 'NV', 2: 'BCC', 3: 'AKIEC', 4: 'BKL', 5: 'DF', 6: 'VASC'}
-    loggin.debug('labels_val_name_dict'.format(labels_val_name_dict))
+    logging.debug('labels_val_name_dict'.format(labels_val_name_dict))
 
     densenet = Densenet(config, labels_val_name_dict, output_path='datasets', dataset_name='densenet')
     densenet.save_dataset(input_dataset_path, input_dataset_labels_file_path)
 
-    loggin.debug('Done')
+    logging.debug('Done')
 
 
