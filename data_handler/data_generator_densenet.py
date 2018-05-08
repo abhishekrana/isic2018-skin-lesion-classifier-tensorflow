@@ -191,7 +191,8 @@ class DataGeneratorDensenet(BaseData):
 
         # The input-function must return a dict wrapping the images.
         # x = {'input_1': images_batch}
-        x = {'vgg16_input': images_batch}
+        # x = {'vgg16_input': images_batch}
+        x = {'densenet121_input': images_batch}
         # x = {'images_input': images_batch}
         # x = {'data': images_batch}
         y = labels_batch_categorical
