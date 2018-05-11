@@ -11,10 +11,14 @@ import pudb
 import random
 from tensorflow.python import debug as tf_debug
 import logging
-from PIL import Image
+from PIL import Image, ImageOps
+import csv
+import random
 
-import utils.utils_image as utils_image
 from data_handler.tfrecords_densenet import TFRecordsDensenet
+import utils.utils as utils
+import utils.utils_image as utils_image
+from utils.config import process_config
 
 
 class TrainerDensenet(BaseTrain):
@@ -22,7 +26,7 @@ class TrainerDensenet(BaseTrain):
         super(TrainerDensenet, self).__init__(sess, model, data, config,logger)
 
 
-    def train(self):
+    def train_and_eval(self):
 
         filenames_regex = os.path.join(self.config.tfrecords_path_train, '*.tfr')
         filenames_train = glob.glob(filenames_regex)
@@ -44,9 +48,8 @@ class TrainerDensenet(BaseTrain):
                                                                     train=True, 
                                                                     batch_size=self.config.batch_size, 
                                                                     buffer_size=self.config.data_gen_buffer_size),
-                                                                    # max_steps=1000
+                                                                    max_steps=self.config.train_max_steps,
                                                                     )
-
 
         eval_spec = tf.estimator.EvalSpec(input_fn=lambda: self.data.input_fn(
                                                                     filenames=filenames_test, 
@@ -54,12 +57,11 @@ class TrainerDensenet(BaseTrain):
                                                                     batch_size=self.config.batch_size, 
                                                                     buffer_size=self.config.data_gen_buffer_size)
                                                                     )
-         
 
         tf.estimator.train_and_evaluate(self.model.model_estimator, train_spec, eval_spec)
 
-        # eval_spec = tf.estimator.EvalSpec(input_fn=self.eval_input_fn)
-        # train_spec = tf.estimator.TrainSpec(input_fn=self.train_input_fn)
+
+    def train():
 
         # hooks=[
         # tf.train.LoggingTensorHook(["layer_conv1/bias/Adam:0"], every_n_iter=1),
@@ -69,17 +71,15 @@ class TrainerDensenet(BaseTrain):
         # tf.train.SummarySaverHook(save_steps=100, output_dir="./tmp"),
         # ]
 
-        # hooks = []
-        # if self.config.debug == 1:
-        #     hooks = [tf_debug.LocalCLIDebugHook()]
-        #     # hooks=[tf.train.LoggingTensorHook(["layer_conv1/bias/Adam:0"], every_n_iter=1)]
+        hooks = []
+        if self.config.debug == 1:
+            hooks = [tf_debug.LocalCLIDebugHook()]
+            # hooks=[tf.train.LoggingTensorHook(["layer_conv1/bias/Adam:0"], every_n_iter=1)]
 
-        # logging.debug('\n=========================')
-        # logging.debug('TRAIN')
-        # self.model.model_estimator.train(input_fn=lambda: self.train_input_fn(), steps=self.config.train_num_steps, hooks=hooks)
-        # logging.debug('\n')
-
-
+        logging.debug('\n=========================')
+        logging.debug('TRAIN')
+        self.model.model_estimator.train(input_fn=lambda: self.train_input_fn(), steps=self.config.train_max_steps, hooks=hooks)
+        logging.debug('\n')
 
 
     def train_input_fn(self):
@@ -121,95 +121,92 @@ class TrainerDensenet(BaseTrain):
 
 
     def predict(self):
+        ## Get image-label mapping
+        image_label_dict = {}
+        dataset_labels_file_path = 'datasets/densenet/ISIC2018_Task3_Training_GroundTruth.csv'
+        with open(dataset_labels_file_path) as csvfile:
+            read_csv = csv.reader(csvfile, delimiter=',')
+            for index, row in enumerate(read_csv):
+                ## Skip header
+                if index == 0:
+                    continue
+                label_one_hot_encoding = [int(round(float(row[i+1]), 0)) for i in range(7)]
+                image_label_dict[row[0]] = np.argmax(label_one_hot_encoding)
 
 
-        test_files = []
-        for label in self.config.labels:
-            test_label = [os.path.join(os.path.join(self.config.dataset_path_test, label), file_name) for file_name in os.listdir(os.path.join(self.config.dataset_path_test, label))]
-            test_files += test_label
-    
-        # test_dogs = [os.path.join(os.path.join(self.config.dataset_path_test, 'dogs'), file_name) for file_name in os.listdir(os.path.join(self.config.dataset_path_test, 'dogs'))]
-        # test_cats = [os.path.join(os.path.join(self.config.dataset_path_test, 'cats'), file_name) for file_name in os.listdir(os.path.join(self.config.dataset_path_test, 'cats'))]
-        # test_dogs = [os.path.join(os.path.join(self.config.dataset_path_test, 'dogs'), file_name) for file_name in os.listdir(os.path.join(self.config.dataset_path_test, 'dogs'))]
-        # test_files = test_cats + test_dogs
+        ## Get image paths
+        # filenames_regex = os.path.join(self.config.tfrecords_path_val, '*.jpg')
+        filenames_regex = os.path.join(self.config.tfrecords_path_test, '*.jpg')
+        image_paths = glob.glob(filenames_regex)
+        if not image_paths:
+            logging.error('ERROR: No images found')
+            exit(1)
 
-        predict_results = self.model.model_estimator.predict(input_fn=lambda: self.predict_imgs_input_fn(test_files[:10], batch_size=10))
-
-        predict_logits = []
-        for prediction in predict_results:
-            predict_logits.append(prediction['dense_2'][0])
+        ## Sample n images
+        random.shuffle(image_paths)
+        image_paths = image_paths[0:self.config.predict_num_images]
 
 
-        predict_is_dog = [logit > 0.5 for logit in predict_logits[:10]]
-        actual_is_dog = [label > 0.5 for label in test_labels[:10]]
-        print("Predict dog:",predict_is_dog)
-        print("Actual dog :",actual_is_dog)
+        ## Get gt_labels
+        gt_labels = []
+        for image_path in image_paths:
+            image_name = os.path.basename(image_path).rsplit('.', 1)[0]
+            gt_labels.append(image_label_dict[image_name])
 
 
-        return 
+        images = []
+        for image_path in image_paths:
 
+            ## Load image
+            image = Image.open(image_path)
 
-        no_images_predict = 20
+            ## Resize and center crop image. size: (width, height)
+            image = ImageOps.fit(image, (self.config.tfr_image_width, self.config.tfr_image_height), Image.LANCZOS, 0, (0.5, 0.5))
 
-        # image_paths_list, gt_labels = self.data.read_dataset(self.config.dataset_path_train)
-        image_paths_list, gt_labels = self.data.read_dataset(self.config.dataset_path_test)
-        logging.debug('image_paths_list: {}'.format(len(image_paths_list)))
+            ## Preprocess images
+            image = np.float32(np.array(image))
+            image = self.data.preprocess_data(image)
 
-        image_idx_rand = random.sample(range(1, len(image_paths_list)), no_images_predict)
-        logging.debug('image_idx_rand :{}', image_idx_rand)
+            images.append(image)
 
-        image_paths_list = np.array(image_paths_list)[image_idx_rand].tolist()
-        gt_labels = np.array(gt_labels)[image_idx_rand].tolist()
+        images = np.array(images)
 
-        for i in range(no_images_predict):
-            logging.debug('image_paths_list: {},  label:{}'.format(image_paths_list[i], gt_labels[i]))
-
-        # Load batch of images in float32 format from list of image names
-        images = np.array([np.array(Image.open(image_path), dtype=np.float32) for image_path in image_paths_list])
-
-        # TODO: Maybe change from RGB to BGR format as saved weights have this format
-
+        # TODO: Don't shuffle else labels will mismatch
         predict_input_fn = tf.estimator.inputs.numpy_input_fn(
-                x={"image": images},
+                x={"densenet121_input": images},
+                y=None,
+                batch_size=128,
                 num_epochs=1,
-                shuffle=False)
-
-        logging.debug('\n=========================')
-        logging.debug('PREDICT')
-        predictions = self.model.model_estimator.predict(input_fn=predict_input_fn)
-        logging.debug('\n')
-
-        cls_pred = np.array(list(predictions))
-        logging.debug(len(cls_pred))
-
-        for i in range(no_images_predict):
-            logging.debug('[GT Pred] [{} {}]'.format(gt_labels[i], cls_pred[i]))
+                shuffle=False,
+                queue_capacity=1000,
+                # In order to have predicted and repeatable order of reading and enqueueing,
+                # such as in prediction and evaluation mode, num_threads should be 1.
+                num_threads=1)
 
 
-    def predict_imgs_input_fn(self, filenames, batch_size=1):
-        pu.db
-        def _parse_function(filename, label):
-            image_string = tf.read_file(filename)
-            image = tf.image.decode_image(image_string, channels=3)
-            image.set_shape([None, None, None])
-            image = tf.image.resize_images(image, [self.config.tfr_image_height, self.config.tfr_image_width])
-            image = tf.subtract(image, 116.779) # Zero-center by mean pixel
-            image.set_shape([self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels])
-            image = tf.reverse(image, axis=[2]) # 'RGB'->'BGR'
-            # d = dict(zip([input_name], [image])), label
-            d = image, label
-            return d
-        labels = [0]*len(filenames)
-        labels=np.array(labels)
-        # Expand the shape of "labels" if necessory
-        if len(labels.shape) == 1:
-            labels = np.expand_dims(labels, axis=1)
-        filenames = tf.constant(filenames)
-        labels = tf.constant(labels)
-        labels = tf.cast(labels, tf.float32)
-        dataset = tf.data.Dataset.from_tensor_slices((filenames, labels))
-        dataset = dataset.map(_parse_function)
-        dataset = dataset.batch(batch_size)  # Batch size to use
-        iterator = dataset.make_one_shot_iterator()
-        batch_features, batch_labels = iterator.get_next()
-        return batch_features, batch_labels
+        # NOTE: predictions is <generator object Estimator.predict> and hence (maybe) we can dereference it only once.
+
+        checkpoint_path = None
+        if not self.config.predict_weights_path:
+            checkpoint_path = self.config.predict_weights_path
+        predictions = self.model.model_estimator.predict(input_fn=predict_input_fn,
+                                                         checkpoint_path=checkpoint_path)
+
+        # class_prob = [p['class_prob'] for p in predictions]
+        class_prob = [p['dense_4'] for p in predictions]
+        pred_labels = np.argmax(np.array(class_prob), axis=1)
+
+        for gt_label, pred_label in zip(gt_labels, pred_labels):
+            print('GT, PRED: [{}, {}]'.format(gt_label, pred_label))
+
+
+        ## Confusion matrix
+        # https://stackoverflow.com/questions/41617463/tensorflow-confusion-matrix-in-tensorboard
+        confusion = tf.confusion_matrix(labels=gt_labels, predictions=pred_labels, num_classes=self.config.num_classes)
+        logging.debug('Row(GT), Col(Pred)')
+        with tf.Session() as sess:
+            print(sess.run(confusion))
+
+        # Plot and save confusion matrix
+        utils.get_confusion_matrix(self.config, gt_labels, pred_labels)
+

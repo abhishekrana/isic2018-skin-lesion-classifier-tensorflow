@@ -10,6 +10,16 @@ import datetime
 import logging
 import signal
 import glob
+import tensorflow as tf
+import sklearn
+
+import itertools
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn import svm, datasets
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 def get_args():
     argparser = argparse.ArgumentParser(description=__doc__)
@@ -201,5 +211,91 @@ def print_progress(count, total):
     # Print it.
     sys.stdout.write(msg)
     sys.stdout.flush()
+
+def get_config_class_weight(config, data):
+
+    ## 10 sec wasted here; Hence hardcoding for 8000 train images; for categorical labels
+    if (config.debug_train_images_count == 8000) or (config.debug_train_images_count == 0):
+        class_weight =  [ 1.2755102,   0.21409838,  2.72108844,  4.53514739,  1.29282482, 12.84109149, 9.44510035]
+    else:
+        filenames_regex = os.path.join(config.tfrecords_path_train, '*.tfr')
+        filenames = glob.glob(filenames_regex)
+        if not filenames:
+            logging.debug('ERROR: No .tfr files found')
+            exit(1)
+        data_train_op = data.input_fn(filenames=filenames, train=False, batch_size=config.debug_train_images_count, buffer_size=config.data_gen_buffer_size)
+
+        with tf.Session() as sess:
+            data_train = sess.run(data_train_op)
+        labels_train = np.argmax(data_train[1], axis=1)
+        class_weight = sklearn.utils.class_weight.compute_class_weight('balanced', np.unique(labels_train), labels_train)
+
+    class_weight_dict = {}
+    for idx, weight in enumerate(class_weight):
+        class_weight_dict[idx] = weight
+
+    config.class_weight = class_weight_dict
+
+    logging.debug('class_weight {}'.format(config.class_weight))
+
+
+
+def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+
+def get_confusion_matrix(config, gt_labels, pred_labels):
+
+    plot_path = os.path.join(config.output_path, config.exp_name, 'plots')
+    os.makedirs(plot_path, exist_ok=True)
+
+    class_names = []
+    for key_val in sorted(config.labels.items(), key=lambda x: x[1]):
+        class_names.append(key_val[0])
+
+    ## Compute confusion matrix
+    cnf_matrix = confusion_matrix(y_true=gt_labels, y_pred=pred_labels)
+    logging.debug('cnf_matrix {}'.format(cnf_matrix))
+    # np.set_printoptions(precision=2)
+
+    ## Plot non-normalized confusion matrix
+    plt.figure()
+    plot_confusion_matrix(cnf_matrix, classes=class_names, title='Confusion matrix, without normalization')
+    plt.savefig(os.path.join(plot_path, 'confusion_matrix.png'))
+
+    ## Plot normalized confusion matrix
+    plt.figure()
+    plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True, title='Normalized confusion matrix')
+    plt.savefig(os.path.join(plot_path, 'confusion_matrix_norm.png'))
+
+    # plt.show()
 
 

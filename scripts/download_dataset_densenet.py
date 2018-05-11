@@ -11,6 +11,7 @@ import sys
 import csv
 from sklearn.model_selection import StratifiedKFold
 import logging
+from bunch import Bunch
 
 import utils.utils as utils
 import utils.utils_image as utils_image
@@ -60,8 +61,8 @@ class Densenet:
         images_name = []
         images_label = []
         with open(input_dataset_labels_file_path) as csvfile:
-            readCSV = csv.reader(csvfile, delimiter=',')
-            for index, row in enumerate(readCSV):
+            read_csv = csv.reader(csvfile, delimiter=',')
+            for index, row in enumerate(read_csv):
 
                 ## Skip header
                 if index == 0:
@@ -149,7 +150,10 @@ if __name__ == '__main__':
         config = process_config(args)
     except:
         print("missing or invalid arguments")
-        config_file = 'configs/config_densenet.json'
+        args={}
+        args['config_file'] = 'configs/config_densenet.json'
+        args['mode'] = 'ds'
+        args = Bunch(args)
         config = process_config(args)
 
     # Initialize Logger
@@ -158,10 +162,16 @@ if __name__ == '__main__':
     np.random.seed(config.seed)
     logging.debug('seed: {}'.format(config.seed))
 
+
     # input_dataset_path = '/usr/data/cvpr_shared/abhishek/Practical_2/Dataset/ISIC2018/Classification/ISIC2018_Task3_Training_Input'
     # input_dataset_labels_file_path = '/usr/data/cvpr_shared/abhishek/Practical_2/Dataset/ISIC2018/Classification/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
-    input_dataset_path = '/home/mlmiss2018/work/MLMI_ISIC2018/dataset/ISIC2018_Task3_Training_Input'
-    input_dataset_labels_file_path = '/home/mlmiss2018/work/MLMI_ISIC2018/dataset/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
+
+    input_dataset_path = '/media/abhishek/OS/Abhishek/MLMI/ISIC2018_Task3_Training_Input'
+    input_dataset_labels_file_path = '/media/abhishek/OS/Abhishek/MLMI/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
+
+    # input_dataset_path = '/home/mlmiss2018/work/MLMI_ISIC2018/dataset/ISIC2018_Task3_Training_Input'
+    # input_dataset_labels_file_path = '/home/mlmiss2018/work/MLMI_ISIC2018/dataset/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
+
     output_path = os.path.join('..', 'datasets', 'densenet')
 
     ## Reverse key and values of dict

@@ -23,7 +23,7 @@ if [[ $1 -eq 0 ]]; then
 	echo "###############"
 	echo "#  TF Record  #"
 	echo "###############"
-	python $EXP_FILE -m tfr -c $CONFIG_FILE
+	python $EXP_FILE -m 'tfr' -c $CONFIG_FILE
 
 # Train
 elif [[ $1 -eq 1 ]]; then
@@ -32,8 +32,8 @@ elif [[ $1 -eq 1 ]]; then
 	echo "###########"
 	pkill -9 tensorboard
 	rm -rf output/*
-	# tensorboard --logdir=output &
-	python $EXP_FILE -m train -c $CONFIG_FILE
+	tensorboard --logdir=output &
+	python $EXP_FILE -m 'train' -c $CONFIG_FILE
 
 # Val
 elif [[ $1 -eq 2 ]]; then

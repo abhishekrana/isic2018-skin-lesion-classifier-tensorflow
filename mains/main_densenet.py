@@ -7,13 +7,13 @@ from tensorflow.python import debug as tf_debug
 import logging
 import datetime
 
+from bunch import Bunch
 import os
 import shutil
 import time
 import random
 import numpy as np
 os.sys.path.append('./')
-
 
 from data_handler.data_generator_densenet import DataGeneratorDensenet
 from data_handler.tfrecords_densenet import TFRecordsDensenet
@@ -25,14 +25,19 @@ import utils.utils as utils
 
 
 def main():
+
     # Capture the config path from the run arguments then process the json configuration file
     try:
         args = utils.get_args()
         config = process_config(args)
     except:
         print("missing or invalid arguments")
-        config_file = 'configs/config_densenet.json'
+        args={}
+        args['config_file'] = 'configs/config_densenet.json'
+        args['mode'] = 'predict'
+        args = Bunch(args)
         config = process_config(args)
+
 
     if not os.path.exists(config.dataset_path_train):
         print(config.dataset_path_train)
@@ -78,6 +83,10 @@ def main():
     data = DataGeneratorDensenet(config)
 
 
+    ## Get and set class weights in config
+    utils.get_config_class_weight(config, data)
+
+
     ## Create model
     model = ModelDensenet(config)
 
@@ -94,9 +103,11 @@ def main():
     logging.debug('mode {}'.format(config.mode))
     logging.debug('\nConfiguration: \n{}'.format(config))
 
+
     ## TRAINING
     if (config.mode == 'train'):
-        trainer.train()
+        # trainer.train()
+        trainer.train_and_eval()
 
 
     ## EVALUATION
@@ -125,9 +136,12 @@ def main():
     elif (config.mode == 'predict'):
         trainer.predict()
 
+
     else:
         logging.debug("ERROR: Unknown mode")
+        exit(1)
 
 
 if __name__ == '__main__':
     main()
+

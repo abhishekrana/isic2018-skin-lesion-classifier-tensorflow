@@ -10,6 +10,8 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image, ImageOps
 import pudb
+import sklearn
+import pickle
 
 import utils.utils as utils
 import utils.utils_image as utils_image
@@ -28,9 +30,12 @@ class TFRecordsDensenet(BaseTFRecords):
         image_paths_val, labels_val = self.read_dataset(self.config.dataset_path_val)
         image_paths_test, labels_test = self.read_dataset(self.config.dataset_path_test)
 
+
+        ## Shuffle data
         image_paths_train, labels_train  = utils.shuffle_data(image_paths_train, labels_train)
         image_paths_val, labels_val  = utils.shuffle_data(image_paths_val, labels_val)
         image_paths_test, labels_test  = utils.shuffle_data(image_paths_test, labels_test)
+
 
         ## For debugging on smaller dataset
         if config.debug_train_images_count != 0:
@@ -119,13 +124,12 @@ class TFRecordsDensenet(BaseTFRecords):
                 image_path = image_paths[i]
                 label = labels[i]
 
-                # Load the image-file using matplotlib's imread function.
+                # Load images
                 img = Image.open(image_path)
 
                 # TODO:
-                # Center crop and resize image
+                # Center crop and resize image. size: The requested size in pixels, as a 2-tuple: (width, height)
                 img = ImageOps.fit(img, (self.config.tfr_image_width, self.config.tfr_image_height), Image.LANCZOS, 0, (0.5, 0.5))
-                # size: The requested size in pixels, as a 2-tuple: (width, height)
                 # img = img.resize(size=(self.config.tfr_image_width, self.config.tfr_image_height))
 
                 img = np.array(img)
@@ -163,10 +167,15 @@ if __name__ == '__main__':
         config = process_config(args)
     except:
         print("missing or invalid arguments")
-        config_file = 'configs/config_densenet.json'
+        args={}
+        args['config_file'] = 'configs/config_densenet.json'
+        args['mode'] = 'ds'
+        args = Bunch(args)
         config = process_config(args)
+
 
     # Initialize Logger
     utils.logger_init(config, logging.DEBUG) 
 
-    tfrecords_cfiar10 = TFRecordsDensenet(config)
+    tfrecords_densenet = TFRecordsDensenet(config)
+

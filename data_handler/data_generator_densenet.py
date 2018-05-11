@@ -15,6 +15,7 @@ from utils.config import process_config
 from tensorflow.python.keras._impl.keras.applications import imagenet_utils
 # import tensorflow.python.keras.preprocessing.image as k_image
 from tensorflow.python.keras.preprocessing import image as k_image
+from tensorflow.python.keras.applications.densenet import preprocess_input as preprocess_input_densenet
 
 
 class DataGeneratorDensenet(BaseData):
@@ -38,18 +39,35 @@ class DataGeneratorDensenet(BaseData):
         # assert red.get_shape().as_list() == [224, 224, 1]
         # assert green.get_shape().as_list() == [224, 224, 1]
         # assert blue.get_shape().as_list() == [224, 224, 1]
+        # densenet_mean_b = 103.94
+        # densenet_mean_g = 116.78
+        # densenet_mean_r = 123.68
+        # densenet_scale = 0.017
         # image_bgr = tf.concat(axis=2, values=[
-        #     blue - self.config.densenet_mean_b,
-        #     green - self.config.densenet_mean_g,
-        #     red - self.config.densenet_mean_r,
+        #     blue - densenet_mean_b,
+        #     green - densenet_mean_g,
+        #     red - densenet_mean_r,
 	# ])
-        # image_bgr_scaled = image_bgr * self.config.densenet_scale
+        # image_bgr_scaled = image_bgr * densenet_scale
         # return image_bgr_scaled
 
         return image
 
-    def data_augmentation(self, image):
 
+    def preprocess_data(self, image):
+
+        ## TODO: _aSk VGG16 specific preprocessing
+        # image = tf.subtract(image, 116.779) # Zero-center by mean pixel
+        # image = tf.reverse(image, axis=[2]) # 'RGB'->'BGR'
+
+        ## TODO: Densenet specific preprocessing
+        # x: a 3D or 4D numpy array consists of RGB values within [0, 255].
+        image = preprocess_input_densenet(x=image, data_format='channels_last')
+
+        return image
+
+
+    def augment_data(self, image):
         # image = tf.slice(input_tensor, [i, 0, 0, 0], [1, 32, 32, 3])[0]
         image = tf.image.random_flip_left_right(image)
         image = tf.image.random_brightness(image, max_delta=63)
@@ -57,14 +75,18 @@ class DataGeneratorDensenet(BaseData):
         image = tf.expand_dims(image, 0)
         return image
 
+
     def parse_fn(self, serialized):
-        """Parse TFRecords and perform simple data augmentation."
+        """
+        1. Parse tf.Example
+        2. jpeg decode
+        3. image augmentations
+
+        Parse TFRecords and perform simple data augmentation."
         https://github.com/tensorflow/tensorflow/blob/r1.7/tensorflow/python/ops/parsing_ops.py
         `tf.float32` (`FloatList`), `tf.int64` (`Int64List`), and `tf.string` (`BytesList`) are supported.
         """
         # Define a dict with the data-names and types we expect to find in the TFRecords file.
-        # It is a bit awkward that this needs to be specified again, because it could have been
-        # written in the header of the TFRecords file instead.
         features = \
             {
                 'image': tf.FixedLenFeature([], tf.string),
@@ -83,16 +105,15 @@ class DataGeneratorDensenet(BaseData):
         image = tf.decode_raw(image_raw, tf.uint8)
         image = tf.cast(image, tf.float32)
         image = tf.reshape(image, image_shape)
-        # TODO: _aSk VGG16 specific
-        image = tf.subtract(image, 116.779) # Zero-center by mean pixel
-        image = tf.reverse(image, axis=[2]) # 'RGB'->'BGR'
 
-        # Augments image using flip, brightness, contrast, etc
-        # image = self.data_augmentation(image)
+        # Preprocess the data
+        image = self.preprocess_data(image)
+
+        # Augmentation of the data
+        # image = self.augment_data(image)
 
         # Get the label associated with the image.
         label = tf.cast(parsed_example['label'], tf.float32)
-
 
         return image, label
 
@@ -111,7 +132,8 @@ class DataGeneratorDensenet(BaseData):
         # Create a TensorFlow Dataset-object which has functionality
         # for reading and shuffling data from TFRecords files.
         # files = tf.data.Dataset.list_files(file_pattern)
-        if tf.__version__ == "1.7.0":
+
+        if tf.__version__ >= "1.7.0":
             dataset = tf.data.TFRecordDataset(filenames=filenames, num_parallel_reads=self.config.data_gen_num_parallel_reads)
         else:
             dataset = tf.data.TFRecordDataset(filenames=filenames)
@@ -125,8 +147,7 @@ class DataGeneratorDensenet(BaseData):
             # Allow infinite reading of the data.
             num_repeat = None
         else:
-            # If testing then don't shuffle the data.
-            # Only go through the data once.
+            # If testing then don't shuffle the data. Only go through the data once.
             num_repeat = 1
 
         # Repeat the dataset the given number of times.
@@ -135,7 +156,7 @@ class DataGeneratorDensenet(BaseData):
         # Parse the serialized data in the TFRecords files.
         # This returns TensorFlow tensors for the image and labels.
         # num_parallel_calls: recommend using the number of available CPU cores for its value.
-        if (tf.__version__ == '1.7.0'):
+        if (tf.__version__ >= '1.7.0'):
             dataset = dataset.map(self.parse_fn, num_parallel_calls=self.config.data_gen_num_parallel_calls)
         else:
             dataset = dataset.map(self.parse_fn)
@@ -223,15 +244,19 @@ class DataGeneratorDensenet(BaseData):
 
         return image_paths_list, gt_labels
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     try:
         args = utils.get_args()
         config = process_config(args)
     except:
         print("missing or invalid arguments")
-        # config_file = 'configs/config_densenet.json'
-        # config = process_config(config_file)
+        args={}
+        args['config_file'] = 'configs/config_densenet.json'
+        args['mode'] = 'predict'
+        args = Bunch(args)
+        config = process_config(args)
+
 
     # Initialize Logger
     utils.logger_init(config, logging.DEBUG) 
@@ -248,9 +273,6 @@ if __name__ == '__main__':
     with tf.Session() as sess:
 
         images_batch, labels_batch = sess.run(next_batch)
-
-        # print('images_batch:{} shape:{}'.format(images_batch, images_batch['images_input'].shape))
-        # print('labels_batch:{} shape:{}'.format(labels_batch, labels_batch.shape))
 
         image = images_batch['input_1'][0]
         label = labels_batch[0]
