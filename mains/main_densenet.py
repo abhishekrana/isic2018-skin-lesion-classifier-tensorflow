@@ -84,7 +84,7 @@ def main():
 
 
     ## Get and set class weights in config
-    utils.get_config_class_weight(config, data)
+    utils.set_config_class_weight(config, data)
 
 
     ## Create model

@@ -9,6 +9,7 @@
 from base.base_model import BaseModel
 import tensorflow as tf
 import os
+import logging
 from tensorflow.python.keras.applications.vgg16 import VGG16
 from tensorflow.python.keras import models
 from tensorflow.python.keras import layers
@@ -53,11 +54,12 @@ class ModelDensenet(BaseModel):
         optimizer = SGD(lr=self.config.learning_rate, decay=1e-6, momentum=0.9, nesterov=True, clipnorm=5.0)
         # optimizer = RMSprop(lr=2e-5)
 
+
         # model.compile(loss='sparse_categorical_crossentropy',
         model.compile(loss='categorical_crossentropy',
                 optimizer=optimizer,
-                weighted_metrics=self.config.class_weight,
-                metrics=['acc'])
+                weighted_metrics=self.config.class_weight_dict,
+                metrics=['accuracy'])
 
 
         ## Create Estimator from Keras model

@@ -212,7 +212,7 @@ def print_progress(count, total):
     sys.stdout.write(msg)
     sys.stdout.flush()
 
-def get_config_class_weight(config, data):
+def set_config_class_weight(config, data):
 
     ## 10 sec wasted here; Hence hardcoding for 8000 train images; for categorical labels
     if (config.debug_train_images_count == 8000) or (config.debug_train_images_count == 0):
@@ -230,13 +230,12 @@ def get_config_class_weight(config, data):
         labels_train = np.argmax(data_train[1], axis=1)
         class_weight = sklearn.utils.class_weight.compute_class_weight('balanced', np.unique(labels_train), labels_train)
 
-    class_weight_dict = {}
-    for idx, weight in enumerate(class_weight):
-        class_weight_dict[idx] = weight
+    if len(class_weight) < config.num_classes:
+        class_weight = class_weight.tolist() + (config.num_classes-len(class_weight))*[0]
 
-    config.class_weight = class_weight_dict
 
-    logging.debug('class_weight {}'.format(config.class_weight))
+    config.class_weight_dict = dict(enumerate(class_weight))
+    logging.debug('class_weight {}'.format(config.class_weight_dict))
 
 
 
