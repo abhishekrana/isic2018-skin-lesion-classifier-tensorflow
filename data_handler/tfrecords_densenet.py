@@ -13,6 +13,7 @@ import pudb
 import sklearn
 import pickle
 import shutil
+import Augmentor
 
 import utils.utils as utils
 import utils.utils_image as utils_image
@@ -29,7 +30,8 @@ class TFRecordsDensenet(BaseTFRecords):
 
         utils.create_dirs([config.tfrecords_path_train, config.tfrecords_path_val, config.tfrecords_path_test])
 
-        self.init_data_augmentation(self.config.dataset_path_train)
+        # self.init_data_augmentation(self.config.dataset_path_train)
+        self.data_augmentation_augmentor()
 
         ## Read dataset
         image_paths_train, labels_train = self.read_dataset(self.config.dataset_path_train)
@@ -204,6 +206,31 @@ class TFRecordsDensenet(BaseTFRecords):
         # img.show()
 
         return image_aug
+
+
+    def data_augmentation_augmentor(self):
+
+        ## Create pipeline
+        # p = Augmentor.Pipeline(self.config.dataset_path_train)
+        p = Augmentor.Pipeline('/home/abhishek/Abhishek/git/MLMI_ISIC2018_2/datasets/densenet/train/output/MEL')
+
+        # p.rotate(probability=0.1, max_left_rotation=0, max_right_rotation=0)
+
+        ## Add Operations to the Pipeline
+        # p.rotate(probability=0.7, max_left_rotation=10, max_right_rotation=10)
+        # p.zoom(probability=0.3, min_factor=1.1, max_factor=1.6)
+
+        # p.crop_by_size(probability=1.0, width=self.config.tfr_image_width, height=self.config.tfr_image_height, centre=True)
+
+        # Good values for parameters are between 2 and 10 for the grid width and height, with a magnitude of between 1 and 10. 
+        # Using values outside of these approximate ranges may result in unpredictable behaviour
+        p.random_distortion(probability=1.0, grid_width=9, grid_height=9, magnitude=9)
+
+
+        ## Execute and Sample From the Pipeline
+        p.sample(50)
+        exit(0)
+
 
 
     def create_tfrecord(self, image_paths, labels, idx_start, idx_end, output_path):

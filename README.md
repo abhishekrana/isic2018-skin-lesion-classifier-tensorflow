@@ -24,6 +24,8 @@ pip install ptpython
 pip install ptipython
 pip install -U scikit-image
 pip install imgaug
+pip install Augmentor
+pip install Pillow
 ```
 
 ## Dataset
