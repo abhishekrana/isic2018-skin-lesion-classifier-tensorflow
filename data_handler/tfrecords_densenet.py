@@ -12,6 +12,7 @@ from PIL import Image, ImageOps
 import pudb
 import sklearn
 import pickle
+import shutil
 
 import utils.utils as utils
 import utils.utils_image as utils_image
@@ -27,7 +28,9 @@ class TFRecordsDensenet(BaseTFRecords):
         super(TFRecordsDensenet, self).__init__(config)
 
         utils.create_dirs([config.tfrecords_path_train, config.tfrecords_path_val, config.tfrecords_path_test])
+
         self.init_data_augmentation(self.config.dataset_path_train)
+
         ## Read dataset
         image_paths_train, labels_train = self.read_dataset(self.config.dataset_path_train)
         image_paths_val, labels_val = self.read_dataset(self.config.dataset_path_val)
@@ -115,7 +118,10 @@ class TFRecordsDensenet(BaseTFRecords):
 
         print('\n')
 
+
     def init_data_augmentation(self, dataset_path):
+        print('Generating augmented images...\n')
+
         image_paths_list = []
         labels = []
 
@@ -124,53 +130,81 @@ class TFRecordsDensenet(BaseTFRecords):
             image_paths = utils_image.get_images_path_list_from_dir(
                                                 os.path.join(dataset_path, label_name),
                                                 img_format=self.config.dataset_path_image_format)
-            for i in range(0, len(image_paths)):
-                img = Image.open(image_paths[i])
+            image_paths = image_paths[0:5]
+
+            for idx, image_path in enumerate(image_paths):
+
+                img = Image.open(image_paths[idx])
                 img = np.array(img)
                 img_aug = self.data_augmentation(img)
-                img_path_name = os.path.join(dataset_path, label_name, label_name + str(i))
-                utils_image.save_image(img_aug, img_path_name + "aug.jpg")
+
+                os.makedirs(os.path.join('temp', label_name), exist_ok=True)
+                img_name = os.path.basename(image_path).rsplit('.', 1)[0]
+                img_ext = os.path.basename(image_path).rsplit('.', 1)[1]
+
+                # img_path_name = os.path.join(dataset_path, label_name, img_name + '_' + str(idx) + '_aug.' + img_ext)
+                img_path_name = os.path.join('temp', label_name, img_name + '_' + str(idx) + '_aug.' + img_ext)
+
+                shutil.copy2(image_path, os.path.join('temp', label_name, img_name + '.' + img_ext))
+                utils_image.save_image(img_aug, img_path_name)
+                print('img_path_name', img_path_name)
+
 
     def data_augmentation(self, image):
 
-        # image = tf.slice(input_tensor, [i, 0, 0, 0], [1, 32, 32, 3])[0]
-        # image = tf.image.random_flip_left_right(image)
-        # image = tf.image.random_brightness(image, max_delta=63)
-        # image = tf.image.random_contrast(image, lower=0.2, upper=1.8)
-        # image = tf.expand_dims(image, 0)
         seq = iaa.Sequential([
-            iaa.Fliplr(0.5),  # horizontal flips
-            #iaa.Crop(percent=(0, 0.1)),  # random crops
-            # Small gaussian blur with random sigma between 0 and 0.5.
-            # But we only blur about 50% of all images.
-            #iaa.Sometimes(0.5,
-            #              iaa.GaussianBlur(sigma=(0, 0.5))
-            #              ),
+
+            # Horizontal Flips
+            # iaa.Fliplr(0.5),
+
+            # Random Crops
+            # iaa.Crop(percent=(0, 0.1)),
+
+            # Small gaussian blur with random sigma between 0 and 0.5. But we only blur about 50% of all images.
+            # iaa.Sometimes(0.5, iaa.GaussianBlur(sigma=(0, 0.5))),
+
             # Strengthen or weaken the contrast in each image.
-            #iaa.ContrastNormalization((0.75, 1.5)),
+            # iaa.ContrastNormalization((0.75, 1.5)),
+
             # Add gaussian noise.
             # For 50% of all images, we sample the noise once per pixel.
-            # For the other 50% of all images, we sample the noise per pixel AND
-            # channel. This can change the color (not only brightness) of the
-            # pixels.
-            #iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05 * 255), per_channel=0.5),
+            # For the other 50% of all images, we sample the noise per pixel AND channel. 
+            # This can change the color (not only brightness) of the pixels.
+            iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05 * 255), per_channel=0.5),
+
             # Make some images brighter and some darker.
-            # In 20% of all cases, we sample the multiplier once per channel,
-            # which can end up changing the color of the images.
-            #iaa.Multiply((0.8, 1.2), per_channel=0.2),
+            # In 20% of all cases, we sample the multiplier once per channel, which can end up changing the color of the images.
+            # iaa.Multiply((0.8, 1.2), per_channel=0.2),
+
             # Apply affine transformations to each image.
             # Scale/zoom them, translate/move them, rotate them and shear them.
 
         ], random_order=True)  # apply augmenters in random order
 
+
+        # Sometimes(0.5, ...) applies the given augmenter in 50% of all cases,
+        # e.g. Sometimes(0.5, GaussianBlur(0.3)) would blur roughly every second image.
+        # sometimes = lambda aug: iaa.Sometimes(0.5, aug)
+        # seq = iaa.Sequential(
+        #     [
+        #         iaa.SomeOf((0, 5),
+        #         [
+        #             sometimes(iaa.ElasticTransformation(alpha=(0.5, 3.5), sigma=0.25)), # move pixels locally around (with random strengths)
+        #         ],
+        #         random_order=True
+        #         )
+        #     ],
+        #     random_order=True)
+
+
         image = cv2.convertScaleAbs(image, alpha=(255.0/255.0))
         image_aug = seq.augment_image(image)
 
         # img = k_image.array_to_img(image_aug)
-        #
         # img.show()
 
         return image_aug
+
 
     def create_tfrecord(self, image_paths, labels, idx_start, idx_end, output_path):
 

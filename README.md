@@ -22,6 +22,8 @@ pip install keras
 pip install ipython
 pip install ptpython
 pip install ptipython
+pip install -U scikit-image
+pip install imgaug
 ```
 
 ## Dataset
