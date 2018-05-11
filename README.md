@@ -8,8 +8,8 @@ sudo apt install -y virtualenv
 
 # Tensorflow (optional)
 sudo apt-get install python3-pip python3-dev python-virtualenv # for Python 3.n
-virtualenv --system-site-packages -p python3 tensorflow170_py35_gpu # for Python 3.n with GPU
-source tensorflow170_py35_gpu/bin/activate
+virtualenv --system-site-packages -p python3 tensorflow180_py35_gpu # for Python 3.n with GPU
+source tensorflow180_py35_gpu/bin/activate
 easy_install -U pip
 pip3 install --upgrade tensorflow-gpu # for Python 3.n and GPU
 
@@ -56,7 +56,7 @@ densenet
 
 ## Generate tensorflow records
 ```
-python data_handler/tfrecords_densenet.py -c configs/config_densenet.json
+./run.sh 0
 ```
 
 ## Train

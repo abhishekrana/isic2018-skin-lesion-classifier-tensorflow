@@ -1,8 +1,3 @@
-
-# EXP_NAME='cifar10'
-# CONFIG_FILE='configs/config_cifar10_small.json'
-# CONFIG_FILE='configs/config_cifar10.json'
-
 CONFIG_FILE='configs/config_densenet.json'
 TF_RECORD_FILE='data_handler/tfrecords_densenet.py'
 EXP_FILE='mains/main_densenet.py'
@@ -40,9 +35,6 @@ elif [[ $1 -eq 2 ]]; then
 	echo "################"
 	echo "#  Evaluation  #"
 	echo "################"
-	# pkill -9 tensorboard
-	# rm -rf "output"$EXP_NAME"/summary"
-	# tensorboard --logdir=output &
 	python $EXP_FILE -m 'eval' -c $CONFIG_FILE
 
 # Test
