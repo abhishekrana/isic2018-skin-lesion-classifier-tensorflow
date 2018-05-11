@@ -184,11 +184,11 @@ class TrainerDensenet(BaseTrain):
                 num_threads=1)
 
 
-        # NOTE: predictions is <generator object Estimator.predict> and hence (maybe) we can dereference it only once.
-
         checkpoint_path = None
         if not self.config.predict_weights_path:
             checkpoint_path = self.config.predict_weights_path
+
+        # NOTE: predictions is <generator object Estimator.predict> and hence (maybe) we can dereference it only once.
         predictions = self.model.model_estimator.predict(input_fn=predict_input_fn,
                                                          checkpoint_path=checkpoint_path)
 

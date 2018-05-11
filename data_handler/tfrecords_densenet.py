@@ -30,13 +30,26 @@ class TFRecordsDensenet(BaseTFRecords):
 
         utils.create_dirs([config.tfrecords_path_train, config.tfrecords_path_val, config.tfrecords_path_test])
 
+        ## Generate augmented dataset
         # self.init_data_augmentation(self.config.dataset_path_train)
         self.data_augmentation_augmentor()
 
+
         ## Read dataset
-        image_paths_train, labels_train = self.read_dataset(self.config.dataset_path_train)
-        image_paths_val, labels_val = self.read_dataset(self.config.dataset_path_val)
-        image_paths_test, labels_test = self.read_dataset(self.config.dataset_path_test)
+        image_paths_orig_train, labels_orig_train = self.read_dataset(self.config.dataset_path_train)
+        image_paths_aug_train, labels_aug_train = self.read_dataset(self.config.dataset_aug_path_train)
+        image_paths_train = image_paths_orig_train + image_paths_aug_train
+        labels_train = labels_orig_train + labels_aug_train
+
+        image_paths_orig_val, labels_orig_val = self.read_dataset(self.config.dataset_path_val)
+        image_paths_aug_val, labels_aug_val = self.read_dataset(self.config.dataset_aug_path_val)
+        image_paths_val = image_paths_orig_val + image_paths_aug_val
+        labels_val = labels_orig_val + labels_aug_val
+
+        image_paths_orig_test, labels_orig_test = self.read_dataset(self.config.dataset_path_test)
+        image_paths_aug_test, labels_aug_test = self.read_dataset(self.config.dataset_aug_path_test)
+        image_paths_test = image_paths_orig_test + image_paths_aug_test
+        labels_test = labels_orig_test + labels_aug_test
 
 
         ## Shuffle data
@@ -229,7 +242,6 @@ class TFRecordsDensenet(BaseTFRecords):
 
         ## Execute and Sample From the Pipeline
         p.sample(50)
-        exit(0)
 
 
 
