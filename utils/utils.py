@@ -1,25 +1,25 @@
 ##########################################################################################
 # Utility functions
 ##########################################################################################
-import argparse
-import sys
 import os
+import sys
 import shutil
+import argparse
 import numpy as np
 import datetime
 import logging
 import signal
 import glob
-import tensorflow as tf
 import sklearn
-
+import glob
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn import svm, datasets
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+
+import tensorflow as tf
 
 def get_args():
     argparser = argparse.ArgumentParser(description=__doc__)
@@ -225,8 +225,12 @@ def set_config_class_weight(config, data):
             exit(1)
         data_train_op = data.input_fn(filenames=filenames, train=False, batch_size=config.debug_train_images_count, buffer_size=config.data_gen_buffer_size)
 
+        
+        # sess_config = tf.ConfigProto()
+        # sess_config.gpu_options.allow_growth=True
         with tf.Session() as sess:
             data_train = sess.run(data_train_op)
+
         labels_train = np.argmax(data_train[1], axis=1)
         class_weight = sklearn.utils.class_weight.compute_class_weight('balanced', np.unique(labels_train), labels_train)
 
@@ -296,5 +300,14 @@ def get_confusion_matrix(config, gt_labels, pred_labels):
     plt.savefig(os.path.join(plot_path, 'confusion_matrix_norm.png'))
 
     # plt.show()
+
+
+def get_files_from_pattern(file_path_pattern):
+    file_path_names = glob.glob(file_path_pattern)
+    if not file_path_names:
+        logging.error('ERROR: No files found')
+        exit(1)
+
+    return file_path_names
 
 

@@ -27,17 +27,17 @@
   "data_gen_num_parallel_calls":4,
   "data_gen_prefetch_buffer_size":2,
 
-  "learning_rate": 0.01,
+  "learning_rate": 0.001,
   "train_max_steps":10000,
   "train_save_summary_steps": 100,
-  "train_save_checkpoints_steps": 500,
-  "max_to_keep":10,
+  "train_save_checkpoints_steps": 100,
+  "train_keep_checkpoint_max":5,
 
   "debug": 0,
   "debug_tf_print": 0,
-  "debug_train_images_count": 80,
-  "debug_val_images_count": 10,
-  "debug_test_images_count": 10,
+  "debug_train_images_count": 8000,
+  "debug_val_images_count": 1015,
+  "debug_test_images_count": 1000,
   "seed": 7,
 
   "_predict_weights_path": "output/densenet/checkpoints/keras/model.ckpt-8452",

@@ -1,3 +1,6 @@
+##########################################################################################
+# Data Generator
+##########################################################################################
 import os
 os.sys.path.append('./')
 
@@ -13,7 +16,6 @@ import utils.utils_image as utils_image
 from utils.config import process_config
 
 from tensorflow.python.keras._impl.keras.applications import imagenet_utils
-# import tensorflow.python.keras.preprocessing.image as k_image
 from tensorflow.python.keras.preprocessing import image as k_image
 from tensorflow.python.keras.applications.densenet import preprocess_input as preprocess_input_densenet
 
@@ -128,6 +130,7 @@ class DataGeneratorDensenet(BaseData):
         # https://www.tensorflow.org/versions/master/performance/datasets_performance
         # https://www.youtube.com/watch?v=SxOsJPaxHME
 
+        # ETL: Extract, Transform, Load
         ## EXTRACT data from storage
         # Create a TensorFlow Dataset-object which has functionality
         # for reading and shuffling data from TFRecords files.
@@ -256,7 +259,6 @@ if __name__ == '__main__':
         args['mode'] = 'predict'
         args = Bunch(args)
         config = process_config(args)
-
 
     # Initialize Logger
     utils.logger_init(config, logging.DEBUG) 

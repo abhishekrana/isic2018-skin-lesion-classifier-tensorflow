@@ -1,11 +1,12 @@
 ##########################################################################################
 # Utility functions for images
 ##########################################################################################
-from PIL import Image
-import numpy as np
 import os
 import glob
+import numpy as np
+from PIL import Image
 from matplotlib.image import imread
+
 
 def load_image(path, size=None):
     """

@@ -6,7 +6,7 @@ os.sys.path.append('./')
 os.sys.path.append('../')
 
 from base.base_tfrecords import BaseTFRecords
-import tensorflow as tf
+import cv2
 import numpy as np
 from PIL import Image, ImageOps
 import pudb
@@ -14,14 +14,15 @@ import sklearn
 import pickle
 import shutil
 import Augmentor
+from imgaug import augmenters as iaa
+
+import tensorflow as tf
+from tensorflow.python.keras.preprocessing import image as k_image
 
 import utils.utils as utils
 import utils.utils_image as utils_image
 from utils.config import process_config
-import cv2
-from tensorflow.python.keras.preprocessing import image as k_image
 
-from imgaug import augmenters as iaa
 
 class TFRecordsDensenet(BaseTFRecords):
 

@@ -1,27 +1,27 @@
 ##########################################################################################
 # Main
 ##########################################################################################
-import tensorflow as tf
-import tensorflow.contrib.eager as tfe
-from tensorflow.python import debug as tf_debug
-import logging
-import datetime
-
-from bunch import Bunch
 import os
+os.sys.path.append('./')
 import shutil
 import time
 import random
 import numpy as np
-os.sys.path.append('./')
+import logging
+import datetime
+from bunch import Bunch
 
-from data_handler.data_generator_densenet import DataGeneratorDensenet
+import tensorflow as tf
+import tensorflow.contrib.eager as tfe
+from tensorflow.python import debug as tf_debug
+
 from data_handler.tfrecords_densenet import TFRecordsDensenet
+from data_handler.data_generator_densenet import DataGeneratorDensenet
 from models.model_densenet import ModelDensenet
 from trainers.trainer_densenet import TrainerDensenet
 from utils.config import process_config
-from utils.tf_logger import TFLogger
 import utils.utils as utils
+from utils.tf_logger import TFLogger
 
 
 def main():
@@ -45,7 +45,7 @@ def main():
         exit(1)
 
     # Initialize Logger
-    utils.logger_init(config, logging.DEBUG) 
+    utils.logger_init(config, logging.DEBUG)
     tf.logging.set_verbosity(tf.logging.DEBUG)
 
 
@@ -65,7 +65,7 @@ def main():
 
     ## Save code
     utils.save_code(config)
-    
+
 
     ## Create tensorboard logger
     # logger = TFLogger(sess, config)
