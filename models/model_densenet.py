@@ -33,7 +33,6 @@ class ModelDensenet(BaseModel):
 
     def build_model(self):
 
-
         ## Create model
         self.model = self.model_densenet121()
         self.model.summary()
@@ -48,8 +47,7 @@ class ModelDensenet(BaseModel):
         self.model.compile(
                 loss='sparse_categorical_crossentropy',
                 # loss='categorical_crossentropy',
-                # optimizer=optimizer,
-                optimizer='Adam',
+                optimizer=optimizer,
                 # weighted_metrics=self.config.class_weight_dict,
                 metrics=['accuracy']
                 )
@@ -59,24 +57,30 @@ class ModelDensenet(BaseModel):
 
         img_size = (self.config.tfr_image_height, self.config.tfr_image_width, self.config.tfr_image_channels)
 
-        # Densenet121
-        conv_base = DenseNet121(weights='imagenet', include_top=False, input_shape=img_size)
+        ## Densenet121
+        # conv_base = DenseNet121(weights='imagenet', include_top=False, input_shape=img_size)
+
+        ## VGG16
+        conv_base = VGG16(weights='imagenet', include_top=False, input_shape=img_size)
 
         model = models.Sequential()
         model.add(conv_base)
 
         model.add(layers.Flatten())
 
-        model.add(layers.Dense(512, activation='relu'))
-        # model.add(Dropout(0.25))
+        model.add(layers.Dense(1024, activation='relu'))
+        model.add(layers.Dense(1024, activation='relu'))
 
-        model.add(layers.Dense(512, activation='relu'))
-        # model.add(Dropout(0.25))
 
-        model.add(layers.Dense(128, activation='relu'))
+        # model.add(layers.Dense(512, activation='relu'))
+        # # model.add(Dropout(0.25))
+
+        # model.add(layers.Dense(512, activation='relu'))
+        # # model.add(Dropout(0.25))
+
+        # # model.add(layers.Dense(128, activation='relu'))
 
         model.add(layers.Dense(self.config.num_classes, activation='softmax', name='class_prob'))
-        # model.add(layers.Dense(self.config.num_classes, activation='softmax', name='dense_4'))
 
         conv_base.trainable = False
 

@@ -122,6 +122,7 @@ class TrainerDensenet(BaseTrain):
                         # steps=100,
                         steps=None,                                                                 # If None, evaluates until input_fn raises an end-of-input exception.
                         checkpoint_path=None,                                                       # If None, the latest checkpoint in model_dir is used.
+                        # checkpoint_path='output/densenet/checkpoints/keras/model.ckpt-2501',
                         hooks=None,
                         name="train"
                         )
@@ -208,12 +209,14 @@ class TrainerDensenet(BaseTrain):
             images.append(image)
 
         images = np.array(images)
+        logging.debug('images {}'.format(images.shape))
 
         # TODO: Don't shuffle else labels will mismatch
         predict_input_fn = tf.estimator.inputs.numpy_input_fn(
-                x={"densenet121_input": images},
+                # x={"densenet121_input": images},
+                x={"vgg16_input": images},
                 y=None,
-                batch_size=128,
+                batch_size=10,
                 num_epochs=1,
                 shuffle=False,
                 queue_capacity=1000,

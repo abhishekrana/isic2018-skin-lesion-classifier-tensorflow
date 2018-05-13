@@ -17,6 +17,7 @@ from utils.config import process_config
 
 from tensorflow.python.keras._impl.keras.applications import imagenet_utils
 from tensorflow.python.keras.preprocessing import image as k_image
+from tensorflow.python.keras.applications.vgg16 import preprocess_input as preprocess_input_vgg16
 from tensorflow.python.keras.applications.densenet import preprocess_input as preprocess_input_densenet
 
 
@@ -61,10 +62,11 @@ class DataGeneratorDensenet(BaseData):
         ## TODO: _aSk VGG16 specific preprocessing
         # image = tf.subtract(image, 116.779) # Zero-center by mean pixel
         # image = tf.reverse(image, axis=[2]) # 'RGB'->'BGR'
+        image = preprocess_input_vgg16(x=image, data_format='channels_last')
 
         ## TODO: Densenet specific preprocessing
         # x: a 3D or 4D numpy array consists of RGB values within [0, 255].
-        image = preprocess_input_densenet(x=image, data_format='channels_last')
+        # image = preprocess_input_densenet(x=image, data_format='channels_last')
 
         return image
 
@@ -216,8 +218,9 @@ class DataGeneratorDensenet(BaseData):
 
         # The input-function must return a dict wrapping the images.
         x = {'densenet121_input': images_batch}
-        # y = labels_batch
-        y = labels_batch_categorical
+        x = {'vgg16_input': images_batch}
+        y = labels_batch
+        # y = labels_batch_categorical
 
 
         # Print for debugging
@@ -225,7 +228,7 @@ class DataGeneratorDensenet(BaseData):
         #     x['image'] = tf.Print(x['image'], [tf.shape(x['image'])], '\nTF x\n', summarize=20)
         #     y = tf.Print(y, [y, tf.shape(y)], '\nTF y\n', summarize=20)
 
-        return (x, y)
+        return x, y
 
 
     def read_dataset(self, dataset_path):
