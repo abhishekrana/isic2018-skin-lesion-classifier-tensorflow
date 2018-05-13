@@ -45,8 +45,8 @@ class ModelDensenet(BaseModel):
 
         ## Compile model
         self.model.compile(
-                loss='sparse_categorical_crossentropy',
-                # loss='categorical_crossentropy',
+                # loss='sparse_categorical_crossentropy',
+                loss='categorical_crossentropy',
                 optimizer=optimizer,
                 # weighted_metrics=self.config.class_weight_dict,
                 metrics=['accuracy']
