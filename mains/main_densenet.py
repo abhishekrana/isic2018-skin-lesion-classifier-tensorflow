@@ -52,6 +52,7 @@ def main():
     ## Register signal handler
     utils.signal_handler(config)
 
+
     ## Set seed values to reproduce results
     random.seed(config.seed)
     np.random.seed(config.seed)
@@ -71,6 +72,13 @@ def main():
     # logger = TFLogger(sess, config)
 
 
+    ## Configure GPU
+    sess_config = tf.ConfigProto()
+    sess_config.gpu_options.allow_growth=True
+    sess_config.gpu_options.per_process_gpu_memory_fraction = 0.4
+    tf.keras.backend.set_session(tf.Session(config=sess_config))
+
+
     sess=''
     logger=''
     ## Create TF Records
@@ -84,7 +92,7 @@ def main():
 
 
     ## Get and set class weights in config
-    utils.set_config_class_weight(config, data)
+    # utils.set_config_class_weight(config, data)
 
 
     ## Create model
@@ -106,8 +114,8 @@ def main():
 
     ## TRAINING
     if (config.mode == 'train'):
-        # trainer.train()
-        trainer.train_and_eval()
+        trainer.train()
+        # trainer.train_and_eval()
 
 
     ## EVALUATION

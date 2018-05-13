@@ -120,21 +120,22 @@ class DataGeneratorDensenet(BaseData):
         return image, label
 
 
-    def input_fn(self, filenames, train, batch_size=32, buffer_size=2048):
-        # Args:
-        # filenames:   Filenames for the TFRecords files.
-        # train:       Boolean whether training (True) or testing (False).
-        # batch_size:  Return batches of this size.
-        # buffer_size: Read buffers of this size. The random shuffling
-        #              is done on the buffer, so it must be big enough.
-        # https://www.tensorflow.org/versions/master/performance/datasets_performance
-        # https://www.youtube.com/watch?v=SxOsJPaxHME
+    def input_fn(self, file_pattern, train, batch_size=32, buffer_size=2048):
+        """
+        Args:
+            file_pattern:   Path with pattern of TFRecords. Eg: '/home/*.tfr'
+            train:          Boolean whether training (True) or testing (False).
+            batch_size:     Return batches of this size.
+            buffer_size:    Read buffers of this size. The random shuffling
+                            is done on the buffer, so it must be big enough.
 
-        # ETL: Extract, Transform, Load
-        ## EXTRACT data from storage
-        # Create a TensorFlow Dataset-object which has functionality
-        # for reading and shuffling data from TFRecords files.
-        # files = tf.data.Dataset.list_files(file_pattern)
+        ETL: Extract, Transform, Load
+        https://www.tensorflow.org/versions/master/performance/datasets_performance
+        https://www.youtube.com/watch?v=SxOsJPaxHME
+        """
+
+        ## EXTRACT data
+        filenames = tf.data.Dataset.list_files(file_pattern)
 
         if tf.__version__ >= "1.7.0":
             dataset = tf.data.TFRecordDataset(filenames=filenames, num_parallel_reads=self.config.data_gen_num_parallel_reads)
@@ -214,20 +215,17 @@ class DataGeneratorDensenet(BaseData):
         labels_batch_categorical = tf.one_hot(labels_batch, self.config.num_classes)
 
         # The input-function must return a dict wrapping the images.
-        # x = {'input_1': images_batch}
-        # x = {'vgg16_input': images_batch}
         x = {'densenet121_input': images_batch}
-        # x = {'images_input': images_batch}
-        # x = {'data': images_batch}
-        y = labels_batch_categorical
         # y = labels_batch
+        y = labels_batch_categorical
+
 
         # Print for debugging
         # if self.config.debug_tf_print:
         #     x['image'] = tf.Print(x['image'], [tf.shape(x['image'])], '\nTF x\n', summarize=20)
         #     y = tf.Print(y, [y, tf.shape(y)], '\nTF y\n', summarize=20)
 
-        return x, y
+        return (x, y)
 
 
     def read_dataset(self, dataset_path):

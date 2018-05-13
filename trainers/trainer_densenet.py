@@ -29,11 +29,6 @@ class TrainerDensenet(BaseTrain):
         super(TrainerDensenet, self).__init__(sess, model, data, config,logger)
 
         ## Configure estimator
-        sess_config = tf.ConfigProto()
-        sess_config.gpu_options.allow_growth=True
-        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.4
-        K.set_session(tf.Session(config=sess_config))
-
         est_config =  tf.estimator.RunConfig(
                                     # model_dir=None,                                               # None: Use a default value set by the Estimator.
                                     # tf_random_seed=None,
@@ -41,7 +36,7 @@ class TrainerDensenet(BaseTrain):
                                     # keep_checkpoint_every_n_hours=10000,
                                     # log_step_count_steps=100,                                     # The frequency, in number of global steps, that the global step/sec and the loss will be logged during training.
                                     # train_distribute=None,
-                                    session_config=sess_config,
+                                    # session_config=sess_config,
                                     keep_checkpoint_max=self.config.train_keep_checkpoint_max,
                                     save_checkpoints_steps=self.config.train_save_checkpoints_steps,# save_checkpoints_secs OR save_checkpoints_steps
                                     save_summary_steps=self.config.train_save_summary_steps         # default:100
@@ -62,33 +57,32 @@ class TrainerDensenet(BaseTrain):
 
 
     def train_and_eval(self):
-        filenames_train = utils.get_files_from_pattern(os.path.join(self.config.tfrecords_path_train, '*.tfr'))
-        filenames_val = utils.get_files_from_pattern(os.path.join(self.config.tfrecords_path_val, '*.tfr'))
-        filenames_test = utils.get_files_from_pattern(os.path.join(self.config.tfrecords_path_val, '*.tfr'))
 
         train_spec = tf.estimator.TrainSpec(
-                                        input_fn=lambda: self.data.input_fn(
-                                            filenames=filenames_train,
-                                            train=True,
-                                            batch_size=self.config.batch_size,
-                                            buffer_size=self.config.data_gen_buffer_size
-                                            ),
-                                        max_steps=self.config.train_max_steps,                      # If None, train forever. The training input_fn is not expected to generate OutOfRangeError or StopIteration exceptions.
-                                        hooks=None,
-                                        )
+                                    input_fn=lambda: self.data.input_fn(
+                                        file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
+                                        train=True,
+                                        batch_size=self.config.batch_size,
+                                        buffer_size=self.config.data_gen_buffer_size
+                                        ),
+                                    max_steps=self.config.train_max_steps,                          # If None, train forever. The training input_fn is not expected to generate OutOfRangeError or StopIteration exceptions.
+                                    hooks=None,
+                                    )
 
         eval_spec = tf.estimator.EvalSpec(
-                                        input_fn=lambda: self.data.input_fn(
-                                            filenames=filenames_val,
-                                            train=False,
-                                            batch_size=self.config.batch_size,
-                                            buffer_size=self.config.data_gen_buffer_size
-                                            ),
-                                        steps=None,                                                 # default:100. No of steps for which to evaluate model. If None, evaluates until input_fn raises an end-of-input exception
-                                        start_delay_secs=120,                                       # default:120. Start evaluating after waiting for this many seconds.
-                                        throttle_secs=180,                                          # default:600. Evaluate after throttle_secs
-                                        name='eval_val'
-                                        )
+                                    input_fn=lambda: self.data.input_fn(
+                                        file_pattern=os.path.join(self.config.tfrecords_path_val, '*.tfr'),
+                                        train=False,
+                                        batch_size=self.config.batch_size_eval,
+                                        buffer_size=self.config.data_gen_buffer_size
+                                        ),
+                                    steps=None,                                                     # default:100. No of steps for which to evaluate model. If None, evaluates until input_fn raises an end-of-input exception
+                                    # start_delay_secs=120,                                           # default:120. Start evaluating after waiting for this many seconds.
+                                    # throttle_secs=180,                                              # default:600. Evaluate after throttle_secs
+                                    start_delay_secs=10,
+                                    throttle_secs=10,
+                                    name='eval_val'
+                                    )
 
         tf.estimator.train_and_evaluate(self.estimator, train_spec, eval_spec)
 
@@ -100,52 +94,74 @@ class TrainerDensenet(BaseTrain):
 
         logging.debug('\n=========================\nTRAIN')
         self.estimator.train(
-                        input_fn=lambda: self.train_input_fn(), 
-                        hooks=hooks,
+                        input_fn=lambda: self.data.input_fn(
+                            file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
+                            train=True,
+                            batch_size=self.config.batch_size,
+                            buffer_size=self.config.data_gen_buffer_size
+                            ),
                         max_steps=self.config.train_max_steps,
+                        hooks=hooks,
                         # steps=None,                                                               # steps OR max_steps
                         # saving_listeners=None                                                     # Used for callbacks that run immediately before or after checkpoint savings.
                         )
         logging.debug('\n')
 
-    def train_input_fn(self):
-        filenames_train = utils.get_files_from_pattern(os.path.join(self.config.tfrecords_path_train, '*.tfr'))
-        return self.data.input_fn(filenames=filenames_train, train=True, batch_size=self.config.batch_size, buffer_size=self.config.data_gen_buffer_size)
-
 
     def evaluate(self):
+
+        ## Evaluate on train dataset
         logging.debug('\n=========================\nEVAL [dataset=train]')
         self.estimator.evaluate(
-                            input_fn=lambda: self.eval_input_fn(self.config.tfrecords_path_train), 
-                            steps=None,                                                             # If None, evaluates until input_fn raises an end-of-input exception.
-                            hooks=None,
-                            checkpoint_path=None,                                                   # If None, the latest checkpoint in model_dir is used.
-                            name="eval_train")
-
-        logging.debug('\n=========================\nEVAL [dataset=val]')
-        self.estimator.evaluate(
-                            input_fn=lambda: self.eval_input_fn(self.config.tfrecords_path_val), 
-                            steps=None,
-                            hooks=None,
-                            checkpoint_path=None,
-                            name="eval_val")
-
-        logging.debug('\n=========================\nEVAL [dataset=test]')
-        self.estimator.evaluate(
-                            input_fn=lambda: self.eval_input_fn(self.config.tfrecords_path_test), 
-                            steps=None,
-                            hooks=None,
-                            checkpoint_path=None,
-                            name="eval_test")
-        logging.debug('\n')
+                        input_fn=lambda: self.data.input_fn(
+                            file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
+                            train=False,
+                            batch_size=self.config.batch_size_eval,
+                            buffer_size=self.config.data_gen_buffer_size
+                            ),
+                        # steps=100,
+                        steps=None,                                                                 # If None, evaluates until input_fn raises an end-of-input exception.
+                        checkpoint_path=None,                                                       # If None, the latest checkpoint in model_dir is used.
+                        hooks=None,
+                        name="train"
+                        )
 
 
-    def eval_input_fn(self, tfrecords_path):
-        filenames_train = utils.get_files_from_pattern(os.path.join(self.config.tfrecords_path, '*.tfr'))
-        return self.data.input_fn(filenames=filenames, train=False, batch_size=self.config.batch_size, buffer_size=self.config.data_gen_buffer_size)
+        ## Evaluate on validation dataset
+        # logging.debug('\n=========================\nEVAL [dataset=val]')
+        # self.estimator.evaluate(
+        #                 input_fn=lambda: self.data.input_fn(
+        #                     file_pattern=os.path.join(self.config.tfrecords_path_val, '*.tfr'),
+        #                     train=False,
+        #                     batch_size=self.config.batch_size_eval,
+        #                     buffer_size=self.config.data_gen_buffer_size
+        #                     ),
+        #                 steps=None,
+        #                 checkpoint_path=None,
+        #                 hooks=None,
+        #                 name="val"
+        #                 )
+
+
+        ## Evaluate on test dataset
+        # logging.debug('\n=========================\nEVAL [dataset=test]')
+        # self.estimator.evaluate(
+        #                 input_fn=lambda: self.data.input_fn(
+        #                     file_pattern=os.path.join(self.config.tfrecords_path_test, '*.tfr'),
+        #                     train=False,
+        #                     batch_size=self.config.batch_size_eval,
+        #                     buffer_size=self.config.data_gen_buffer_size
+        #                     ),
+        #                 steps=None,
+        #                 checkpoint_path=None,
+        #                 hooks=None,
+        #                 name="test"
+        #                 )
+        # logging.debug('\n')
 
 
     def predict(self):
+
         ## Get image-label mapping
         image_label_dict = {}
         dataset_labels_file_path = 'datasets/densenet/ISIC2018_Task3_Training_GroundTruth.csv'
@@ -160,12 +176,9 @@ class TrainerDensenet(BaseTrain):
 
 
         ## Get image paths
-        # filenames_regex = os.path.join(self.config.tfrecords_path_val, '*.jpg')
-        filenames_regex = os.path.join(self.config.tfrecords_path_test, '*.jpg')
-        image_paths = glob.glob(filenames_regex)
-        if not image_paths:
-            logging.error('ERROR: No images found')
-            exit(1)
+        image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_train, img_format='jpg')
+        # image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_test, img_format='jpg')
+        # image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_val, img_format='jpg')
 
         ## Sample n images
         random.shuffle(image_paths)

@@ -22,15 +22,18 @@
   "tfr_images_per_record":10000,
 
   "batch_size": 16,
+  "batch_size_eval": 8,
   "data_gen_buffer_size": 2048,
   "data_gen_num_parallel_reads":4,
-  "data_gen_num_parallel_calls":4,
+  "_data_gen_num_parallel_calls":4,
+  "data_gen_num_parallel_calls":8,
   "data_gen_prefetch_buffer_size":2,
 
   "learning_rate": 0.001,
   "train_max_steps":10000,
   "train_save_summary_steps": 100,
-  "train_save_checkpoints_steps": 100,
+  "train_save_checkpoints_steps": 500,
+  "_train_save_checkpoints_steps": 100,
   "train_keep_checkpoint_max":5,
 
   "debug": 0,

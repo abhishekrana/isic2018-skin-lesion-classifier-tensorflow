@@ -218,16 +218,9 @@ def set_config_class_weight(config, data):
     if (config.debug_train_images_count == 8000) or (config.debug_train_images_count == 0):
         class_weight =  [ 1.2755102,   0.21409838,  2.72108844,  4.53514739,  1.29282482, 12.84109149, 9.44510035]
     else:
-        filenames_regex = os.path.join(config.tfrecords_path_train, '*.tfr')
-        filenames = glob.glob(filenames_regex)
-        if not filenames:
-            logging.debug('ERROR: No .tfr files found')
-            exit(1)
+        filenames = tf.data.Dataset.list_files(os.path.join(self.config.tfrecords_path_train, '*.tfr'))
         data_train_op = data.input_fn(filenames=filenames, train=False, batch_size=config.debug_train_images_count, buffer_size=config.data_gen_buffer_size)
 
-        
-        # sess_config = tf.ConfigProto()
-        # sess_config.gpu_options.allow_growth=True
         with tf.Session() as sess:
             data_train = sess.run(data_train_op)
 

@@ -25,7 +25,6 @@ from tensorflow.python.keras.applications.resnet50 import ResNet50
 from tensorflow.python.keras.applications.inception_v3 import InceptionV3
 from tensorflow.python.keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
 
-
 class ModelDensenet(BaseModel):
 
     def __init__(self, config):
@@ -33,6 +32,7 @@ class ModelDensenet(BaseModel):
 
 
     def build_model(self):
+
 
         ## Create model
         self.model = self.model_densenet121()
@@ -46,8 +46,10 @@ class ModelDensenet(BaseModel):
 
         ## Compile model
         self.model.compile(
-                loss='categorical_crossentropy',
-                optimizer=optimizer,
+                loss='sparse_categorical_crossentropy',
+                # loss='categorical_crossentropy',
+                # optimizer=optimizer,
+                optimizer='Adam',
                 # weighted_metrics=self.config.class_weight_dict,
                 metrics=['accuracy']
                 )
@@ -66,10 +68,10 @@ class ModelDensenet(BaseModel):
         model.add(layers.Flatten())
 
         model.add(layers.Dense(512, activation='relu'))
-        model.add(Dropout(0.25))
+        # model.add(Dropout(0.25))
 
         model.add(layers.Dense(512, activation='relu'))
-        model.add(Dropout(0.25))
+        # model.add(Dropout(0.25))
 
         model.add(layers.Dense(128, activation='relu'))
 
