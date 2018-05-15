@@ -66,9 +66,9 @@ class TrainerDensenet_2(BaseTrain):
             features_dict, labels = self.sess.run(data_batch)
             features = features_dict[self.config.model_name + '_input']
 
-            loss, _, metrics, summary = self.sess.run([
-                        self.model.loss, 
+            _, loss, metrics, summary = self.sess.run([
                         self.model.train_op, 
+                        self.model.loss, 
                         self.model.metrics,
                         self.model.summary_op
                         ],
@@ -123,8 +123,8 @@ class TrainerDensenet_2(BaseTrain):
                 features_dict, labels = self.sess.run(data_batch)
             except Exception:
                 logging.debug('Input data stream read completely {}'.format(Exception))
-                global_step = self.sess.run(tf.train.get_global_step())
-                self.summary_writer.add_summary(summary, global_step)
+                # global_step = self.sess.run(tf.train.get_global_step())
+                # self.summary_writer.add_summary(summary, global_step)
                 # pass
                 return
 
@@ -141,6 +141,7 @@ class TrainerDensenet_2(BaseTrain):
                         }
                     )
 
+
             # global_step refer to the number of batches seen by the graph. When it is passed in the 
             # optimizer.minimize() argument list, the variable is increased by one
             global_step = self.sess.run(tf.train.get_global_step())
@@ -148,8 +149,8 @@ class TrainerDensenet_2(BaseTrain):
             logging.debug('Epoch:{}, global_step:{}, step:{}, loss:{}, accuracy:{}'.format(epoch, global_step, step, loss, metrics))
 
             ## Save summary
-            if (global_step%self.config.train_save_summary_steps) == 0:
-                self.summary_writer.add_summary(summary, global_step)
+            # if (global_step%self.config.train_save_summary_steps) == 0:
+        self.summary_writer.add_summary(summary, global_step)
 
 
     def evaluate(self):

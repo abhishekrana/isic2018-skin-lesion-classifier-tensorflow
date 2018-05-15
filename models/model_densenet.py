@@ -245,14 +245,16 @@ class ModelDensenet(BaseModel):
             exit(1)
 
 
+        base_model.trainable = False
 
         scope = 'read_model_test/'
 
         x = Flatten()(base_model.output)
 
-        fc_layers = [512, 512]
+        fc_layers = [512, 512, 512, 512]
         for i, n_units in enumerate(fc_layers):
             x = Dense(n_units, activation=tf.nn.relu, name=scope + 'fc' + str(i))(x)
+            x = Dropout(0.5)(x)
 
         x = Dense(self.config.num_classes, name=scope + 'fclast')(x)
 
