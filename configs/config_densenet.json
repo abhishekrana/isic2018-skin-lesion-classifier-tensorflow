@@ -21,9 +21,12 @@
   "tfr_image_channels":3,
   "tfr_images_per_record":10000,
 
-  "batch_size": 16,
-  "batch_size_eval": 12,
-  "batch_size_pred": 10,
+  "_batch_size": 16,
+  "_batch_size_eval": 12,
+  "_batch_size_pred": 10,
+  "batch_size": 4,
+  "batch_size_eval": 4,
+  "batch_size_pred": 4,
   "data_gen_buffer_size": 2048,
   "data_gen_num_parallel_reads":4,
   "_data_gen_num_parallel_calls":4,
@@ -33,7 +36,7 @@
   "_learning_rate": 0.001,
   "learning_rate": 1e-4,
   "train_max_steps":10000,
-  "train_save_summary_steps": 100,
+  "train_save_summary_steps": 50,
   "_train_save_checkpoints_steps": 500,
   "train_save_checkpoints_steps": 100,
   "train_keep_checkpoint_max":5,
@@ -48,7 +51,7 @@
   "_pre_trained_model": "output/densenet/checkpoints/keras/model.ckpt-8452",
   "pre_trained_model": "",
 
-  "predict_num_images": 1000,
+  "predict_num_images": 10,
 
   "output_path": "output",
   "num_epochs": 1000

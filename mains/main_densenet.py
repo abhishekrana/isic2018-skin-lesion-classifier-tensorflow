@@ -131,10 +131,8 @@ def main():
             logging.debug('Restored latest_checkpoint {}'.format(latest_checkpoint))
         else:
             sess.run(tf.global_variables_initializer())
-            sess.run(tf.local_variables_initializer())
 
-        # sess.run(tf.global_variables_initializer())
-        # sess.run(tf.local_variables_initializer())
+        sess.run(tf.local_variables_initializer())
 
         ## Create Trainer
         # trainer = TrainerDensenet(sess, model, data, config, logger)
@@ -166,6 +164,7 @@ def main():
                     continue
 
                 last_checkpoint = latest_checkpoint
+                model.saver.restore(sess, latest_checkpoint)
 
                 trainer.evaluate()
 

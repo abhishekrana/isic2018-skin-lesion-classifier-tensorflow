@@ -38,6 +38,8 @@ class ModelDensenet(BaseModel):
         """
         mode: train/eval/test
         """
+        assert (mode=='train') or (mode=='eval') or (mode=='predict')
+
         logging.debug('build_model')
         global_step = tf.Variable(0, name='global_step',trainable=False)
 
@@ -80,21 +82,19 @@ class ModelDensenet(BaseModel):
 
             # return logits, probs, weights, loss
 
-        elif mode=='predict':
-            logging.debug('mode {}'.format(mode))
-
-        else:
-            logging.error('Unknown mode: {}'.format(mode))
-            exit(1)
-
-
         ## Save Model
         # TODO: Set up the Saver after setting up the AdamOptimizer because ADAM has state (namely per-weight learning rates) that need to be restored as well.
         self.saver = tf.train.Saver(max_to_keep=self.config.train_keep_checkpoint_max)
 
+
+        if mode=='predict':
+            logging.debug('mode {}'.format(mode))
+            return
+
+
         tf.summary.scalar('loss', self.loss)
         tf.summary.scalar('accuracy/value', self.metrics['accuracy'][0])
-        tf.summary.scalar('accuracy/updae_op', self.metrics['accuracy'][1])
+        tf.summary.scalar('accuracy/update_op', self.metrics['accuracy'][1])
 
         self.summary_op = tf.summary.merge_all()
 

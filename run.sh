@@ -35,6 +35,7 @@ elif [[ $1 -eq 2 ]]; then
 	echo "################"
 	echo "#  Evaluation  #"
 	echo "################"
+	# export CUDA_VISIBLE_DEVICES=""
 	python $EXP_FILE -m 'eval' -c $CONFIG_FILE
 
 # Test

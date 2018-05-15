@@ -40,9 +40,9 @@ def process_config(args):
     config.image_shape = (config.tfr_image_height, config.tfr_image_width, config.tfr_image_channels)
     # config.model_name = 'vgg16'
     # config.model_name = 'xception'
-    config.model_name = 'resnet50'
+    # config.model_name = 'resnet50'
     # config.model_name = 'inception_resnet_v2'
-    # config.model_name = 'densenet121'
+    config.model_name = 'densenet121'
 
     print('config', config)
 

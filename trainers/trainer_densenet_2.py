@@ -40,48 +40,31 @@ class TrainerDensenet_2(BaseTrain):
     def __init__(self, sess, model, data, config,logger):
         super(TrainerDensenet_2, self).__init__(sess, model, data, config,logger)
 
-    # def __init__(self, sess, model, data, config, logger, context, filenames):
-    #     super(TrainerDensenet, self).__init__(sess, model, data, config,logger)
-    #     self.context = context
-    #     self.filenames = filenames
-
         # sess.run(tf.initialize_all_variables())
-        self.summary_writer = tf.summary.FileWriter(self.config.summary_dir, graph=self.sess.graph, flush_secs=30)
+        self.summary_writer = tf.summary.FileWriter(
+                                                os.path.join(self.config.summary_dir, self.config.mode),
+                                                graph=self.sess.graph, flush_secs=30)
             
 
-
     # def run_epoch(self, is_train, num_steps, iters_done, summary_writer, epoch):
-    def run_epoch(self, mode, epoch):
+    def run_epoch_train(self, mode, epoch):
 
+        assert (mode=='train')
 
         num_steps = int(self.config.debug_train_images_count/self.config.batch_size)
         logging.debug('num_steps {}'.format(num_steps))
 
-        if mode == 'train':
-            file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr')
-        elif mode == 'eval':
-            file_pattern=os.path.join(self.config.tfrecords_path_val, '*.tfr')
-        elif mode == 'predict':
-            file_pattern=os.path.join(self.config.tfrecords_path_test, '*.tfr')
-        else:
-            logging.error('Unknown mode {}'.format(mode))
-            exit(1)
-
-
         data_batch = self.data.input_fn(
-                                file_pattern=file_pattern,
+                                file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
                                 mode=mode,
                                 batch_size=self.config.batch_size,
                                 buffer_size=self.config.data_gen_buffer_size
                                 )
-
+        
         for step in range(num_steps):
-
-            logging.debug('step {}'.format(step))
 
             features_dict, labels = self.sess.run(data_batch)
             features = features_dict[self.config.model_name + '_input']
-
 
             loss, _, metrics, summary = self.sess.run([
                         self.model.loss, 
@@ -95,13 +78,11 @@ class TrainerDensenet_2(BaseTrain):
                         }
                     )
 
-            logging.debug('loss {}'.format(loss))
-            logging.debug('metrics {}'.format(metrics))
-
             # global_step refer to the number of batches seen by the graph. When it is passed in the 
             # optimizer.minimize() argument list, the variable is increased by one
             global_step = self.sess.run(tf.train.get_global_step())
-            logging.debug('global_step {}'.format(global_step))
+
+            logging.debug('Epoch:{}, global_step:{}, step:{}, loss:{}, accuracy:{}'.format(epoch, global_step, step, loss, metrics))
 
             ## Save checkpoints
             if (global_step%self.config.train_save_checkpoints_steps) == 0:
@@ -115,28 +96,65 @@ class TrainerDensenet_2(BaseTrain):
                 self.summary_writer.add_summary(summary, global_step)
 
 
+
     def train(self):
-
-        iters_done = 0
         epoch = 0
-
-
         for epoch in range(self.config.num_epochs):
-            self.run_epoch(mode='train', epoch=epoch)
+            self.run_epoch_train(mode='train', epoch=epoch)
 
+
+    def run_epoch_eval(self, mode, epoch):
+
+        assert (mode=='eval')
+
+        num_steps = int(self.config.debug_val_images_count/self.config.batch_size_eval)
+        logging.debug('num_steps {}'.format(num_steps))
+
+        data_batch = self.data.input_fn(
+                                file_pattern=os.path.join(self.config.tfrecords_path_val, '*.tfr'),
+                                mode=mode,
+                                batch_size=self.config.batch_size_eval,
+                                buffer_size=self.config.data_gen_buffer_size
+                                )
+        
+        for step in range(num_steps):
+
+            try:
+                features_dict, labels = self.sess.run(data_batch)
+            except Exception:
+                logging.debug('Input data stream read completely {}'.format(Exception))
+                global_step = self.sess.run(tf.train.get_global_step())
+                self.summary_writer.add_summary(summary, global_step)
+                # pass
+                return
+
+            features = features_dict[self.config.model_name + '_input']
+
+            loss, metrics, summary = self.sess.run([
+                        self.model.loss, 
+                        self.model.metrics,
+                        self.model.summary_op
+                        ],
+                    feed_dict={
+                        self.model.features: features, 
+                        self.model.labels: labels
+                        }
+                    )
+
+            # global_step refer to the number of batches seen by the graph. When it is passed in the 
+            # optimizer.minimize() argument list, the variable is increased by one
+            global_step = self.sess.run(tf.train.get_global_step())
+
+            logging.debug('Epoch:{}, global_step:{}, step:{}, loss:{}, accuracy:{}'.format(epoch, global_step, step, loss, metrics))
+
+            ## Save summary
+            if (global_step%self.config.train_save_summary_steps) == 0:
+                self.summary_writer.add_summary(summary, global_step)
 
 
     def evaluate(self):
-        iters_done = 0
         epoch = 0
-
-        num_steps = int(self.config.debug_val_images_count/self.config.batch_size)
-
-        for i in range(self.config.num_epochs):
-            # self.run_epoch(is_train=False, num_steps, iters_done, summary_writer, epoch)
-            self.run_epoch(mode='eval')
-
-
+        self.run_epoch_eval(mode='eval', epoch=epoch)
 
 
     def predict(self):
@@ -171,7 +189,7 @@ class TrainerDensenet_2(BaseTrain):
             labels_gt.append(image_label_dict[image_name])
 
 
-        image_paths = image_paths[0:10]
+        image_paths = image_paths[0:self.config.predict_num_images]
         images = []
         for image_path in image_paths:
 
@@ -238,9 +256,9 @@ class TrainerDensenet_2(BaseTrain):
         # exit(0)
 
 
-        checkpoint_path = None
-        if not self.config.predict_weights_path:
-            checkpoint_path = self.config.predict_weights_path
+        # checkpoint_path = None
+        # if not self.config.predict_weights_path:
+        #     checkpoint_path = self.config.predict_weights_path
 
         # NOTE: predictions is <generator object Estimator.predict> and hence (maybe) we can dereference it only once.
         # TODO: Check predict_keys
@@ -260,12 +278,12 @@ class TrainerDensenet_2(BaseTrain):
             print('GT, PRED: [{}, {}]'.format(label_gt, label_pred_cls))
 
 
-        # ## Confusion matrix
-        # # https://stackoverflow.com/questions/41617463/tensorflow-confusion-matrix-in-tensorboard
-        # confusion = tf.confusion_matrix(labels=labels_gt, predictions=pred_labels, num_classes=self.config.num_classes)
-        # logging.debug('Row(GT), Col(Pred)')
-        # with tf.Session() as sess:
-        #     print(sess.run(confusion))
+        ## Confusion matrix
+        # https://stackoverflow.com/questions/41617463/tensorflow-confusion-matrix-in-tensorboard
+        confusion = tf.confusion_matrix(labels=labels_gt, predictions=labels_pred_cls, num_classes=self.config.num_classes)
+        logging.debug('Row(GT), Col(Pred)')
+        with tf.Session() as sess:
+            print(sess.run(confusion))
 
         # # Plot and save confusion matrix
         # utils.get_confusion_matrix(self.config, labels_gt, pred_labels)
