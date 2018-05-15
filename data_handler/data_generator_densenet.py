@@ -18,6 +18,9 @@ from utils.config import process_config
 from tensorflow.python.keras._impl.keras.applications import imagenet_utils
 from tensorflow.python.keras.preprocessing import image as k_image
 from tensorflow.python.keras.applications.vgg16 import preprocess_input as preprocess_input_vgg16
+from tensorflow.python.keras.applications.xception import preprocess_input as preprocess_input_xception
+from tensorflow.python.keras.applications.resnet50 import preprocess_input as preprocess_input_resnet50
+from tensorflow.python.keras.applications.inception_resnet_v2 import preprocess_input as preprocess_input_inception_resnet_v2
 from tensorflow.python.keras.applications.densenet import preprocess_input as preprocess_input_densenet
 
 
@@ -58,15 +61,69 @@ class DataGeneratorDensenet(BaseData):
 
 
     def preprocess_data(self, image):
+        """
+        https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/python/keras/_impl/keras/applications/imagenet_utils.py
 
-        ## TODO: _aSk VGG16 specific preprocessing
-        # image = tf.subtract(image, 116.779) # Zero-center by mean pixel
-        # image = tf.reverse(image, axis=[2]) # 'RGB'->'BGR'
-        image = preprocess_input_vgg16(x=image, data_format='channels_last')
+        mode:
+          - caffe: will convert the images from RGB to BGR, then will zero-center each
+                color channel with respect to the ImageNet dataset, without scaling.
+          - tf: will scale pixels between -1 and 1, sample-wise.
+          - torch: will scale pixels between 0 and 1 and then will normalize each channel
+                with respect to the ImageNet dataset.
 
-        ## TODO: Densenet specific preprocessing
-        # x: a 3D or 4D numpy array consists of RGB values within [0, 255].
-        # image = preprocess_input_densenet(x=image, data_format='channels_last')
+
+	@tf_export('keras.applications.resnet50.preprocess_input',
+		   'keras.applications.vgg19.preprocess_input',
+		   'keras.applications.vgg16.preprocess_input')
+	def preprocess_input(x, data_format=None, mode='caffe'):
+            x: Input Numpy or symbolic tensor, 3D or 4D.
+
+
+        @tf_export('keras.applications.inception_resnet_v2.preprocess_input')
+        def preprocess_input(x):
+            x: a 4D numpy array consists of RGB values within [0, 255].
+            return imagenet_utils.preprocess_input(x, mode='tf')
+
+
+	@tf_export('keras.applications.xception.preprocess_input')
+	def preprocess_input(x):
+            x: a 4D numpy array consists of RGB values within [0, 255].
+	    return imagenet_utils.preprocess_input(x, mode='tf')
+
+
+        @tf_export('keras.applications.densenet.preprocess_input')
+        def preprocess_input(x, data_format=None):
+            x: a 3D or 4D numpy array consists of RGB values within [0, 255].
+	    data_format: data format of the image tensor.
+	    return imagenet_utils.preprocess_input(x, data_format, mode='torch')
+
+        """
+
+
+
+        # TODO: Check if x can also be a tensor or it should be a numpy array only
+
+        # logging.debug('model_name {}'.format(self.config.model_name))
+        if self.config.model_name == 'vgg16':
+            image = preprocess_input_vgg16(x=image, data_format='channels_last')
+            # image = tf.subtract(image, 116.779) # Zero-center by mean pixel
+            # image = tf.reverse(image, axis=[2]) # 'RGB'->'BGR'
+
+        elif self.config.model_name == 'xception':
+            image = preprocess_input_xception(x=image)
+
+        elif self.config.model_name == 'resnet50':
+            image = preprocess_input_resnet50(x=image, data_format='channels_last')
+
+        elif self.config.model_name == 'inception_resnet_v2':
+            image = preprocess_input_inception_resnet_v2(x=image)
+
+        elif self.config.model_name == 'densenet121':
+            image = preprocess_input_densenet(x=image, data_format='channels_last')
+
+        else:
+            logging.error('Unknown model_name {}'.format(model_name))
+            exit(1)
 
         return image
 
@@ -122,7 +179,8 @@ class DataGeneratorDensenet(BaseData):
         return image, label
 
 
-    def input_fn(self, file_pattern, train, batch_size=32, buffer_size=2048):
+    # def input_fn(self, file_pattern, train, batch_size=32, buffer_size=2048):
+    def input_fn(self, file_pattern, mode, batch_size=32, buffer_size=2048):
         """
         Args:
             file_pattern:   Path with pattern of TFRecords. Eg: '/home/*.tfr'
@@ -146,7 +204,7 @@ class DataGeneratorDensenet(BaseData):
 
 
         ## TRANSFORM data to prepare for training
-        if train:
+        if mode == 'train':
             # If training then read a buffer of the given size and randomly shuffle it.
             dataset = dataset.shuffle(buffer_size=buffer_size)
 
@@ -184,8 +242,8 @@ class DataGeneratorDensenet(BaseData):
 
         # Get the next batch of images and labels.
         images_batch, labels_batch = iterator.get_next()
-        print('images_batch', images_batch)
-        print('labels_batch', labels_batch)
+        # logging.debug('images_batch {}'.format(images_batch))
+        # logging.debug('labels_batch {}'.format(labels_batch))
 
 
         # The convolutional layers expect 4-rank tensors but images_batch is a 2-rank tensor, so reshape it.
@@ -212,15 +270,15 @@ class DataGeneratorDensenet(BaseData):
 
 
 
-        # Convert labels to categorical format
-        labels_batch = tf.cast(labels_batch, tf.int64)
-        labels_batch_categorical = tf.one_hot(labels_batch, self.config.num_classes)
-
+        ## Features
         # The input-function must return a dict wrapping the images.
-        # x = {'densenet121_input': images_batch}
-        x = {'vgg16_input': images_batch}
-        # y = labels_batch
-        y = labels_batch_categorical
+        x_key = self.config.model_name + '_input'
+        feature_dict = {x_key: images_batch}
+
+        ## Labels
+        labels_batch = tf.cast(labels_batch, tf.int64)
+        # label = labels_batch
+        label = tf.one_hot(labels_batch, self.config.num_classes)
 
 
         # Print for debugging
@@ -228,7 +286,7 @@ class DataGeneratorDensenet(BaseData):
         #     x['image'] = tf.Print(x['image'], [tf.shape(x['image'])], '\nTF x\n', summarize=20)
         #     y = tf.Print(y, [y, tf.shape(y)], '\nTF y\n', summarize=20)
 
-        return x, y
+        return feature_dict, label
 
 
     def read_dataset(self, dataset_path):
@@ -270,7 +328,7 @@ if __name__ == '__main__':
     logging.debug('filenames {}'.format(filenames))
 
     data_generator_densenet = DataGeneratorDensenet(config)
-    next_batch = data_generator_densenet.input_fn(filenames=filenames, train=True)
+    next_batch = data_generator_densenet.input_fn(filenames=filenames, mode='train')
     logging.debug('next_batch {}'.format(next_batch))
 
     with tf.Session() as sess:
@@ -287,4 +345,13 @@ if __name__ == '__main__':
         img = k_image.array_to_img(image)
 
         img.show()
+
+
+
+
+## Code for future use
+# VGG16:
+# image = tf.subtract(image, 116.779) # Zero-center by mean pixel
+# image = tf.reverse(image, axis=[2]) # 'RGB'->'BGR'
+
 

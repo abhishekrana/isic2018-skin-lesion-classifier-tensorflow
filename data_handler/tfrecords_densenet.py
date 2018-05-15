@@ -152,7 +152,13 @@ class TFRecordsDensenet(BaseTFRecords):
 
                 img = Image.open(image_paths[idx])
                 img = np.array(img)
-                img_aug = self.data_augmentation(img)
+
+                # TODO: Do center cropping
+                # img = cv2.imread(image_paths[idx])
+                # img = cv2.resize(img, (224, 224))
+
+
+                # img_aug = self.data_augmentation(img)
 
                 os.makedirs(os.path.join('temp', label_name), exist_ok=True)
                 img_name = os.path.basename(image_path).rsplit('.', 1)[0]
@@ -162,7 +168,7 @@ class TFRecordsDensenet(BaseTFRecords):
                 img_path_name = os.path.join('temp', label_name, img_name + '_' + str(idx) + '_aug.' + img_ext)
 
                 shutil.copy2(image_path, os.path.join('temp', label_name, img_name + '.' + img_ext))
-                utils_image.save_image(img_aug, img_path_name)
+                # utils_image.save_image(img_aug, img_path_name)
                 print('img_path_name', img_path_name)
 
 
@@ -257,6 +263,11 @@ class TFRecordsDensenet(BaseTFRecords):
 
                 image_path = image_paths[i]
                 label = labels[i]
+
+                # TODO: Do center cropping
+                # img = cv2.imread(image_paths[i])
+                # img = cv2.resize(img, (224, 224))
+
 
                 # Load images
                 img = Image.open(image_path)

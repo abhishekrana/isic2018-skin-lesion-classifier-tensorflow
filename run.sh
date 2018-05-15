@@ -25,9 +25,9 @@ elif [[ $1 -eq 1 ]]; then
 	echo "###########"
 	echo "#  Train  #"
 	echo "###########"
-	pkill -9 tensorboard
-	rm -rf output/*
-	tensorboard --logdir=output &
+	# pkill -9 tensorboard
+	# rm -rf output/*
+	# tensorboard --logdir=output --port=6004 &
 	python $EXP_FILE -m 'train' -c $CONFIG_FILE
 
 # Val

@@ -51,4 +51,6 @@ tensorflow.python.framework.errors_impl.FailedPreconditionError: Attempting to u
 https://github.com/Tony607/Keras_catVSdog_tf_estimator/blob/master/keras_estimator_vgg16-cat_vs_dog.ipynb
 https://github.com/Tony607/Keras_catVSdog_tf_estimator/blob/master/keras_estimator_vgg16-cat_vs_dog-TFRecord.ipynb
 https://github.com/fchollet/deep-learning-with-python-notebooks/blob/master/5.3-using-a-pretrained-convnet.ipynb
+========================
+https://github.com/fchollet/deep-learning-models/releases/download/v0.2
 

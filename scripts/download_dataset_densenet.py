@@ -166,11 +166,11 @@ if __name__ == '__main__':
     # input_dataset_path = '/usr/data/cvpr_shared/abhishek/Practical_2/Dataset/ISIC2018/Classification/ISIC2018_Task3_Training_Input'
     # input_dataset_labels_file_path = '/usr/data/cvpr_shared/abhishek/Practical_2/Dataset/ISIC2018/Classification/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
 
-    input_dataset_path = '/media/abhishek/OS/Abhishek/MLMI/ISIC2018_Task3_Training_Input'
-    input_dataset_labels_file_path = '/media/abhishek/OS/Abhishek/MLMI/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
+    # input_dataset_path = '/media/abhishek/OS/Abhishek/MLMI/ISIC2018_Task3_Training_Input'
+    # input_dataset_labels_file_path = '/media/abhishek/OS/Abhishek/MLMI/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
 
-    # input_dataset_path = '/home/mlmiss2018/work/MLMI_ISIC2018/dataset/ISIC2018_Task3_Training_Input'
-    # input_dataset_labels_file_path = '/home/mlmiss2018/work/MLMI_ISIC2018/dataset/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
+    input_dataset_path = '/home/mlmiss2018/work/MLMI_ISIC2018/dataset/ISIC2018_Task3_Training_Input'
+    input_dataset_labels_file_path = '/home/mlmiss2018/work/MLMI_ISIC2018/dataset/ISIC2018_Task3_Training_GroundTruth/ISIC2018_Task3_Training_GroundTruth.csv'
 
     output_path = os.path.join('..', 'datasets', 'densenet')
 

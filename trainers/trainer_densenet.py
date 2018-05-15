@@ -13,10 +13,12 @@ import logging
 import numpy as np
 from PIL import Image, ImageOps
 from tqdm import tqdm
+import cv2
 
 import tensorflow as tf
 from tensorflow.python import debug as tf_debug
-import keras.backend.tensorflow_backend as K
+# import keras.backend.tensorflow_backend as K
+from tensorflow.python.keras._impl.keras import backend as K
 
 import utils.utils as utils
 import utils.utils_image as utils_image
@@ -46,14 +48,38 @@ class TrainerDensenet(BaseTrain):
         model_dir = os.path.join(os.getcwd(), self.config.checkpoint_dir, 'keras')
 
 
+        logging.debug('====================')
+        # logging.debug(self.model.model.layers[0].output())
+        # logging.debug('00000000000000000000000000000000{}'.format(self.model.model.layers[0]))
+
         ## Create Estimator from Keras model
         self.estimator = tf.keras.estimator.model_to_estimator(
-                                                                keras_model=self.model.model,       # Keras model in memory.
-                                                                keras_model_path=None,              # Directory to a keras model on disk.
-                                                                config=est_config,
-                                                                custom_objects=params,
-                                                                model_dir=model_dir                 # Directory to save Estimator model parameters, graph and etc.
-                                                                )
+                                                        keras_model=self.model.model,               # Keras model in memory.
+                                                        keras_model_path=None,                      # Directory to a keras model on disk.
+                                                        config=est_config,
+                                                        custom_objects=params,
+                                                        model_dir=model_dir                         # Directory to save Estimator model parameters, graph and etc.
+                                                        )
+
+        # self.estimator = tf.estimator.Estimator(
+        #                         model_fn=self.model.model_densenet121_tf,
+        #                         params=params,
+        #                         config=est_config,
+        #                         model_dir=model_dir,
+        #                         warm_start_from=None
+        #                         )
+
+
+    def train_tf(self):
+
+        self.estimator.train(
+                       input_fn=lambda: self.data.input_fn(
+                            file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
+                            train=True,
+                            batch_size=self.config.batch_size,
+                            buffer_size=self.config.data_gen_buffer_size
+                            ),
+                        steps=2000)
 
 
     def train_and_eval(self):
@@ -129,36 +155,36 @@ class TrainerDensenet(BaseTrain):
 
 
         ## Evaluate on validation dataset
-        # logging.debug('\n=========================\nEVAL [dataset=val]')
-        # self.estimator.evaluate(
-        #                 input_fn=lambda: self.data.input_fn(
-        #                     file_pattern=os.path.join(self.config.tfrecords_path_val, '*.tfr'),
-        #                     train=False,
-        #                     batch_size=self.config.batch_size_eval,
-        #                     buffer_size=self.config.data_gen_buffer_size
-        #                     ),
-        #                 steps=None,
-        #                 checkpoint_path=None,
-        #                 hooks=None,
-        #                 name="val"
-        #                 )
+        logging.debug('\n=========================\nEVAL [dataset=val]')
+        self.estimator.evaluate(
+                        input_fn=lambda: self.data.input_fn(
+                            file_pattern=os.path.join(self.config.tfrecords_path_val, '*.tfr'),
+                            train=False,
+                            batch_size=self.config.batch_size_eval,
+                            buffer_size=self.config.data_gen_buffer_size
+                            ),
+                        steps=None,
+                        checkpoint_path=None,
+                        hooks=None,
+                        name="val"
+                        )
 
 
         ## Evaluate on test dataset
-        # logging.debug('\n=========================\nEVAL [dataset=test]')
-        # self.estimator.evaluate(
-        #                 input_fn=lambda: self.data.input_fn(
-        #                     file_pattern=os.path.join(self.config.tfrecords_path_test, '*.tfr'),
-        #                     train=False,
-        #                     batch_size=self.config.batch_size_eval,
-        #                     buffer_size=self.config.data_gen_buffer_size
-        #                     ),
-        #                 steps=None,
-        #                 checkpoint_path=None,
-        #                 hooks=None,
-        #                 name="test"
-        #                 )
-        # logging.debug('\n')
+        logging.debug('\n=========================\nEVAL [dataset=test]')
+        self.estimator.evaluate(
+                        input_fn=lambda: self.data.input_fn(
+                            file_pattern=os.path.join(self.config.tfrecords_path_test, '*.tfr'),
+                            train=False,
+                            batch_size=self.config.batch_size_eval,
+                            buffer_size=self.config.data_gen_buffer_size
+                            ),
+                        steps=None,
+                        checkpoint_path=None,
+                        hooks=None,
+                        name="test"
+                        )
+        logging.debug('\n')
 
 
     def predict(self):
@@ -202,6 +228,9 @@ class TrainerDensenet(BaseTrain):
             ## Resize and center crop image. size: (width, height)
             image = ImageOps.fit(image, (self.config.tfr_image_width, self.config.tfr_image_height), Image.LANCZOS, 0, (0.5, 0.5))
 
+            # img = cv2.imread(image_paths[i])
+            # img = cv2.resize(img, (224, 224))
+
             ## Preprocess images
             image = np.float32(np.array(image))
             image = self.data.preprocess_data(image)
@@ -209,20 +238,36 @@ class TrainerDensenet(BaseTrain):
             images.append(image)
 
         images = np.array(images)
+        logging.debug('model_name {}'.format(self.config.model_name))
         logging.debug('images {}'.format(images.shape))
 
         # TODO: Don't shuffle else labels will mismatch
+        x_key = self.config.model_name + '_input'
         predict_input_fn = tf.estimator.inputs.numpy_input_fn(
-                # x={"densenet121_input": images},
-                x={"vgg16_input": images},
+                x={x_key: images},
                 y=None,
-                batch_size=10,
+                batch_size=self.config.batch_size_pred,
                 num_epochs=1,
                 shuffle=False,
                 queue_capacity=1000,
                 # In order to have predicted and repeatable order of reading and enqueueing,
                 # such as in prediction and evaluation mode, num_threads should be 1.
                 num_threads=1)
+
+        # with tf.Session() as sess:
+        #     init_op = tf.global_variables_initializer()
+        #     sess.run(init_op)
+
+        #     # sess.run(self.model.model.output, feed_dict={self.model.model.input:images})
+        #     # sess.run(self.model.model['class_prob'], feed_dict={self.model.model.input:images})
+        #     # op = self.model.model.get_layer('class_prob')
+        #     # op = self.model.model.get_layer('class_prob')
+        #     # op = self.model.model.layers[0]
+        #     op = self.model.model.get_layer('dense_1')
+        #     out = sess.run(op, 
+        #             feed_dict={self.model.model.input:images})
+        #     logging.debug('out {}'.format(out))
+        # exit(0)
 
 
         checkpoint_path = None
