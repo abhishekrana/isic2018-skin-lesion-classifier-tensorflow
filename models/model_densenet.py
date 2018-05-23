@@ -69,6 +69,8 @@ class ModelDensenet(BaseModel):
 
             ## Optimizer
             optimizer = tf.train.AdamOptimizer(learning_rate=self.config.learning_rate)
+            # optimizer = tf.train.RMSPropOptimizer(learning_rate=self.config.learning_rate)
+            # optimizer = tf.train.GradientDescentOptimizer(learning_rate=self.config.learning_rate)
 
             ## Train op
             self.train_op = optimizer.minimize(loss=self.loss, global_step=tf.train.get_global_step())
@@ -246,17 +248,20 @@ class ModelDensenet(BaseModel):
 
 
         base_model.trainable = False
+        logging.debug('base_model {}'.format(base_model))
 
         scope = 'read_model_test/'
 
         x = Flatten()(base_model.output)
 
-        fc_layers = [512, 512, 512, 512]
+        fc_layers = [512, 512]
         for i, n_units in enumerate(fc_layers):
-            x = Dense(n_units, activation=tf.nn.relu, name=scope + 'fc' + str(i))(x)
-            x = Dropout(0.5)(x)
+            x = Dense(n_units, activation=tf.nn.relu, name=scope + 'fc_' + str(i))(x)
+            x = Dropout(0.25)(x)
 
-        x = Dense(self.config.num_classes, name=scope + 'fclast')(x)
+        x = Dense(512, name=scope + 'fc_' + str(len(fc_layers)))(x)
+
+        x = Dense(self.config.num_classes, name=scope + 'fc_last')(x)
 
         logits = x
 
@@ -319,7 +324,8 @@ class ModelDensenet(BaseModel):
         x = features[x_key]
 
 
-        base_model = ResNet50(include_top=False, input_shape=img_size, input_tensor=x)
+        base_model = DenseNet121(weights='imagenet', include_top=False, input_shape=img_size)
+        # base_model = ResNet50(include_top=False, input_shape=img_size, input_tensor=x)
         # base_model = ResNet50(weights='imagenet', include_top=False, input_shape=img_size)
         # logging.debug('base_model {}'.format(base_model))
         # x = Flatten()(base_model.output)

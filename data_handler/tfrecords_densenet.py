@@ -244,7 +244,9 @@ class TFRecordsDensenet(BaseTFRecords):
 
         # Good values for parameters are between 2 and 10 for the grid width and height, with a magnitude of between 1 and 10. 
         # Using values outside of these approximate ranges may result in unpredictable behaviour
-        p.random_distortion(probability=1.0, grid_width=9, grid_height=9, magnitude=9)
+        # p.random_distortion(probability=1.0, grid_width=9, grid_height=9, magnitude=9)
+
+        p.crop_random(probability=1, percentage_area=0.5)
 
 
         ## Execute and Sample From the Pipeline

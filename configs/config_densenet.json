@@ -7,9 +7,9 @@
   "dataset_path_train": "datasets/densenet/train",
   "dataset_path_val": "datasets/densenet/val",
   "dataset_path_test": "datasets/densenet/test",
-  "dataset_path_train_aug": "datasets/densenet/train_aug",
-  "dataset_path_val_aug": "datasets/densenet/val_aug",
-  "dataset_path_test_aug": "datasets/densenet/test_aug",
+  "dataset_path_train_aug": "datasets/densenet_aug_rd/train",
+  "dataset_path_val_aug": "datasets/densenet_aug_rd/val",
+  "dataset_path_test_aug": "datasets/densenet_aug_rd/test",
   "dataset_path_image_format": "jpg",
 
   "tfrecords_path_train": "datasets/densenet_tfr/train",
@@ -19,10 +19,10 @@
   "tfr_image_width":224,
   "tfr_image_height":224,
   "tfr_image_channels":3,
-  "tfr_images_per_record":10000,
+  "tfr_images_per_record":20000,
 
-  "batch_size": 16,
-  "batch_size_eval": 64,
+  "batch_size": 4,
+  "batch_size_eval": 4,
   "_batch_size_pred": 10,
   "_batch_size": 4,
   "_batch_size_eval": 4,
@@ -43,7 +43,7 @@
 
   "debug": 0,
   "debug_tf_print": 0,
-  "debug_train_images_count": 8000,
+  "debug_train_images_count": 16000,
   "debug_val_images_count": 1015,
   "debug_test_images_count": 1000,
   "seed": 7,
@@ -54,6 +54,6 @@
   "predict_num_images": 10,
 
   "output_path": "output",
-  "num_epochs": 1000
+  "num_epochs": 5000
 }
 

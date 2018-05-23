@@ -43,6 +43,8 @@ def process_config(args):
     # config.model_name = 'resnet50'
     # config.model_name = 'inception_resnet_v2'
     config.model_name = 'densenet121'
+    # config.model_name = 'densenet169'
+    # config.model_name = 'densenet201'
 
     print('config', config)
 

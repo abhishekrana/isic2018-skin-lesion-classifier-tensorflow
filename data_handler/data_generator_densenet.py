@@ -121,6 +121,12 @@ class DataGeneratorDensenet(BaseData):
         elif self.config.model_name == 'densenet121':
             image = preprocess_input_densenet(x=image, data_format='channels_last')
 
+        elif self.config.model_name == 'densenet169':
+            image = preprocess_input_densenet(x=image, data_format='channels_last')
+
+        elif self.config.model_name == 'densenet201':
+            image = preprocess_input_densenet(x=image, data_format='channels_last')
+
         else:
             logging.error('Unknown model_name {}'.format(model_name))
             exit(1)
