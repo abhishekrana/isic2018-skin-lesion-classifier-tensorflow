@@ -29,11 +29,13 @@ class TFRecordsDensenet(BaseTFRecords):
     def __init__(self, config):
         super(TFRecordsDensenet, self).__init__(config)
 
-        utils.create_dirs([config.tfrecords_path_train, config.tfrecords_path_val, config.tfrecords_path_test])
+        utils.remove_dirs([config.dataset_path_train_aug])
+        utils.create_dirs([config.tfrecords_path_train, config.tfrecords_path_val, config.tfrecords_path_test,
+            config.dataset_path_train_aug])
 
         ## Generate augmented dataset
-        # self.init_data_augmentation(self.config.dataset_path_train)
-        # self.data_augmentation_augmentor()
+        # self.data_augmentation_v1(self.config.dataset_path_train)
+        self.data_augmentation_v2()
 
 
         ## Read dataset
@@ -42,15 +44,9 @@ class TFRecordsDensenet(BaseTFRecords):
         image_paths_train = image_paths_orig_train + image_paths_train_aug
         labels_train = labels_orig_train + labels_train_aug
 
-        image_paths_orig_val, labels_orig_val = self.read_dataset(self.config.dataset_path_val)
-        image_paths_val_aug, labels_val_aug = self.read_dataset(self.config.dataset_path_val_aug)
-        image_paths_val = image_paths_orig_val + image_paths_val_aug
-        labels_val = labels_orig_val + labels_val_aug
+        image_paths_val, labels_val = self.read_dataset(self.config.dataset_path_val)
 
-        image_paths_orig_test, labels_orig_test = self.read_dataset(self.config.dataset_path_test)
-        image_paths_test_aug, labels_test_aug = self.read_dataset(self.config.dataset_path_test_aug)
-        image_paths_test = image_paths_orig_test + image_paths_test_aug
-        labels_test = labels_orig_test + labels_test_aug
+        image_paths_test, labels_test = self.read_dataset(self.config.dataset_path_test)
 
 
         ## Shuffle data
@@ -135,64 +131,92 @@ class TFRecordsDensenet(BaseTFRecords):
         print('\n')
 
 
-    def init_data_augmentation(self, dataset_path):
+    def data_augmentation_v1(self, dataset_path):
         print('Generating augmented images...\n')
 
         image_paths_list = []
         labels = []
 
-        for label_name, label_no in self.config.labels.items():
-            # Read image paths
-            image_paths = utils_image.get_images_path_list_from_dir(
-                                                os.path.join(dataset_path, label_name),
-                                                img_format=self.config.dataset_path_image_format)
-            image_paths = image_paths[0:5]
+        augmentations_dict = {
+            'horizontal-flip'           : 1,
+            'random-crop'               : 1,
+            'gaussian-blur'             : 1,
+            'contrast-norm'             : 1,
+            'additive-gaussian-noise'   : 1,
+        }
+        augmentations_type = [ k for k,v in augmentations_dict.items() if v == 1 ]
 
-            for idx, image_path in enumerate(image_paths):
+        for augmentation_type in augmentations_type:
+            print('augmentation_type', augmentation_type)
 
-                img = Image.open(image_paths[idx])
-                img = np.array(img)
+            for label_name, label_no in self.config.labels.items():
 
-                # TODO: Do center cropping
-                # img = cv2.imread(image_paths[idx])
-                # img = cv2.resize(img, (224, 224))
+                # Read image paths
+                image_paths = utils_image.get_images_path_list_from_dir(
+                                                    os.path.join(dataset_path, label_name),
+                                                    img_format=self.config.dataset_path_image_format)
+                image_paths = image_paths[0:5]
+
+                for idx, image_path in enumerate(image_paths):
+
+                    img = Image.open(image_paths[idx])
+                    img = np.array(img)
+
+                    # TODO: Do center cropping
+                    # img = cv2.imread(image_paths[idx])
+                    # img = cv2.resize(img, (224, 224))
+
+                    img_aug = self.data_augmentation_sequence(img, augmentation_type)
+
+                    os.makedirs(os.path.join(self.config.dataset_path_train_aug, label_name), exist_ok=True)
+                    img_name = os.path.basename(image_path).rsplit('.', 1)[0]
+                    img_ext = os.path.basename(image_path).rsplit('.', 1)[1]
+
+                    img_path_name = os.path.join(self.config.dataset_path_train_aug, label_name, img_name + '_' + augmentation_type + '.' + img_ext)
+
+                    utils_image.save_image(img_aug, img_path_name)
+                    print('img_path_name', img_path_name, idx)
+
+                    ## Save original image for manual comparison
+                    # img_path_name_orig = os.path.join(self.config.dataset_path_train_aug, label_name, img_name + '.' + img_ext)
+                    # utils_image.save_image(img, img_path_name_orig)
 
 
-                # img_aug = self.data_augmentation(img)
 
-                os.makedirs(os.path.join('temp', label_name), exist_ok=True)
-                img_name = os.path.basename(image_path).rsplit('.', 1)[0]
-                img_ext = os.path.basename(image_path).rsplit('.', 1)[1]
+    def data_augmentation_sequence(self, image, augmentation_type):
+                
+        ## Horizontal flips
+        if augmentation_type == 'horizontal-flip':
+            seq = iaa.Sequential([
+                iaa.Fliplr(1)
+            ])
 
-                # img_path_name = os.path.join(dataset_path, label_name, img_name + '_' + str(idx) + '_aug.' + img_ext)
-                img_path_name = os.path.join('temp', label_name, img_name + '_' + str(idx) + '_aug.' + img_ext)
+        ## Random Crops
+        if augmentation_type == 'random-crop':
+            seq = iaa.Sequential([
+                iaa.Crop(percent=(0, 0.25)),
+            ])
 
-                shutil.copy2(image_path, os.path.join('temp', label_name, img_name + '.' + img_ext))
-                # utils_image.save_image(img_aug, img_path_name)
-                print('img_path_name', img_path_name)
+        ## Small gaussian blur with random sigma between 0 and 0.5. But we only blur about 50% of all images.
+        if augmentation_type == 'gaussian-blur':
+            seq = iaa.Sequential([
+            iaa.Sometimes(1.0, iaa.GaussianBlur(sigma=(0, 0.5))),
+            ])
 
+        ## Strengthen or weaken the contrast in each image.
+        if augmentation_type == 'contrast-norm':
+            seq = iaa.Sequential([
+            iaa.ContrastNormalization((0.75, 1.0)),
+            ])
 
-    def data_augmentation(self, image):
-
-        seq = iaa.Sequential([
-
-            # Horizontal Flips
-            # iaa.Fliplr(0.5),
-
-            # Random Crops
-            # iaa.Crop(percent=(0, 0.1)),
-
-            # Small gaussian blur with random sigma between 0 and 0.5. But we only blur about 50% of all images.
-            # iaa.Sometimes(0.5, iaa.GaussianBlur(sigma=(0, 0.5))),
-
-            # Strengthen or weaken the contrast in each image.
-            # iaa.ContrastNormalization((0.75, 1.5)),
-
-            # Add gaussian noise.
-            # For 50% of all images, we sample the noise once per pixel.
-            # For the other 50% of all images, we sample the noise per pixel AND channel. 
-            # This can change the color (not only brightness) of the pixels.
+        ## Add gaussian noise.
+        # For 50% of all images, we sample the noise once per pixel.
+        # For the other 50% of all images, we sample the noise per pixel AND channel. 
+        # This can change the color (not only brightness) of the pixels.
+        if augmentation_type == 'additive-gaussian-noise':
+            seq = iaa.Sequential([
             iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05 * 255), per_channel=0.5),
+            ])
 
             # Make some images brighter and some darker.
             # In 20% of all cases, we sample the multiplier once per channel, which can end up changing the color of the images.
@@ -201,7 +225,8 @@ class TFRecordsDensenet(BaseTFRecords):
             # Apply affine transformations to each image.
             # Scale/zoom them, translate/move them, rotate them and shear them.
 
-        ], random_order=True)  # apply augmenters in random order
+        # ], random_order=True)  # apply augmenters in random order
+        # ])  # apply augmenters in random order
 
 
         # Sometimes(0.5, ...) applies the given augmenter in 50% of all cases,
@@ -228,11 +253,11 @@ class TFRecordsDensenet(BaseTFRecords):
         return image_aug
 
 
-    def data_augmentation_augmentor(self):
+    def data_augmentation_v2(self):
 
         ## Create pipeline
-        # p = Augmentor.Pipeline(self.config.dataset_path_train)
-        p = Augmentor.Pipeline('/home/abhishek/Abhishek/git/MLMI_ISIC2018_2/datasets/densenet/train/output/MEL')
+        p = Augmentor.Pipeline(source_directory=self.config.dataset_path_train, 
+                output_directory=os.path.join('../../../', self.config.dataset_path_train_aug))
 
         # p.rotate(probability=0.1, max_left_rotation=0, max_right_rotation=0)
 
@@ -244,13 +269,14 @@ class TFRecordsDensenet(BaseTFRecords):
 
         # Good values for parameters are between 2 and 10 for the grid width and height, with a magnitude of between 1 and 10. 
         # Using values outside of these approximate ranges may result in unpredictable behaviour
-        # p.random_distortion(probability=1.0, grid_width=9, grid_height=9, magnitude=9)
+        p.random_distortion(probability=1.0, grid_width=9, grid_height=9, magnitude=9)
 
-        p.crop_random(probability=1, percentage_area=0.5)
+        # p.crop_random(probability=1, percentage_area=0.5)
 
 
         ## Execute and Sample From the Pipeline
-        p.sample(50)
+        # p.sample(50)
+        p.sample(8000)
 
 
 

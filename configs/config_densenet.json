@@ -7,9 +7,7 @@
   "dataset_path_train": "datasets/densenet/train",
   "dataset_path_val": "datasets/densenet/val",
   "dataset_path_test": "datasets/densenet/test",
-  "dataset_path_train_aug": "datasets/densenet_aug_rd/train",
-  "dataset_path_val_aug": "datasets/densenet_aug_rd/val",
-  "dataset_path_test_aug": "datasets/densenet_aug_rd/test",
+  "dataset_path_train_aug": "datasets/densenet_aug/train",
   "dataset_path_image_format": "jpg",
 
   "tfrecords_path_train": "datasets/densenet_tfr/train",
@@ -43,7 +41,7 @@
 
   "debug": 0,
   "debug_tf_print": 0,
-  "debug_train_images_count": 16000,
+  "debug_train_images_count": 20000,
   "debug_val_images_count": 1015,
   "debug_test_images_count": 1000,
   "seed": 7,

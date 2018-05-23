@@ -83,11 +83,11 @@ def main():
     sess_config = tf.ConfigProto()
     sess_config.gpu_options.allow_growth=True
     if config.mode == 'train':
-        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.3
-        # sess_config.gpu_options.per_process_gpu_memory_fraction = 0.5
+        # sess_config.gpu_options.per_process_gpu_memory_fraction = 0.3
+        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.6
     else:
-        # sess_config.gpu_options.per_process_gpu_memory_fraction = 0.4
-        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.3
+        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.4
+        # sess_config.gpu_options.per_process_gpu_memory_fraction = 0.3
     tf.keras.backend.set_session(tf.Session(config=sess_config))
 
 
