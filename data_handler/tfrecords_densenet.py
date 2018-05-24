@@ -35,7 +35,7 @@ class TFRecordsDensenet(BaseTFRecords):
 
         ## Generate augmented dataset
         # self.data_augmentation_v1(self.config.dataset_path_train)
-        self.data_augmentation_v2()
+        # self.data_augmentation_v2()
 
 
         ## Read dataset
@@ -269,7 +269,8 @@ class TFRecordsDensenet(BaseTFRecords):
 
         # Good values for parameters are between 2 and 10 for the grid width and height, with a magnitude of between 1 and 10. 
         # Using values outside of these approximate ranges may result in unpredictable behaviour
-        p.random_distortion(probability=1.0, grid_width=9, grid_height=9, magnitude=9)
+        # p.random_distortion(probability=1.0, grid_width=9, grid_height=9, magnitude=9)
+        p.random_distortion(probability=1.0, grid_width=3, grid_height=3, magnitude=3)
 
         # p.crop_random(probability=1, percentage_area=0.5)
 

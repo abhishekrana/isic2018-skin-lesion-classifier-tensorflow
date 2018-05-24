@@ -63,6 +63,18 @@ class ModelDensenet(BaseModel):
             # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
 
+
+            # # your class weights
+            # class_weights = tf.constant([[1.0, 2.0, 3.0]])
+            # # deduce weights for batch samples based on their true label
+            # weights = tf.reduce_sum(class_weights * onehot_labels, axis=1)
+            # # apply the weights, relying on broadcasting of the multiplication
+            # weighted_cross_entropy = cross_entropy * weights
+
+            # # Scale the cost by the class weights
+            # scaled_error = tf.mul(error, class_weight)
+
+
             ## Loss
             # loss = tf.losses.softmax_cross_entropy(target, logits) # san
             self.loss = tf.reduce_mean(cross_entropy)
@@ -248,9 +260,14 @@ class ModelDensenet(BaseModel):
 
 
         base_model.trainable = False
-        logging.debug('base_model {}'.format(base_model))
+        # for layer in base_model.layers[:60]:
+        #     layer.trainable = False
+
+        logging.debug('base_model {}'.format(base_model.summary()))
+        logging.debug('base_model layers count {}'.format(len(base_model.layers)))
 
         scope = 'read_model_test/'
+        
 
         x = Flatten()(base_model.output)
 

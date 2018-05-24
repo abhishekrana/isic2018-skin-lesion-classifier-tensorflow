@@ -82,12 +82,11 @@ def main():
     ## Configure GPU
     sess_config = tf.ConfigProto()
     sess_config.gpu_options.allow_growth=True
+    gpu_train_fraction = 0.7
     if config.mode == 'train':
-        # sess_config.gpu_options.per_process_gpu_memory_fraction = 0.3
-        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.6
+        sess_config.gpu_options.per_process_gpu_memory_fraction = gpu_train_fraction
     else:
-        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.4
-        # sess_config.gpu_options.per_process_gpu_memory_fraction = 0.3
+        sess_config.gpu_options.per_process_gpu_memory_fraction = 1 - gpu_train_fraction
     tf.keras.backend.set_session(tf.Session(config=sess_config))
 
 
@@ -183,4 +182,14 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+"""
+GPU: 8GB
+
+"batch_size": 16,
+"batch_size_eval": 2,
+
+gpu_train_fraction = 0.7
+"""
+
 

@@ -5,6 +5,7 @@ import os
 os.sys.path.append('./')
 os.sys.path.append('../')
 
+import matplotlib; matplotlib.pyplot.switch_backend('agg')
 
 from base.base_trainer import BaseTrain
 from tqdm import tqdm
@@ -174,9 +175,9 @@ class TrainerDensenet_2(BaseTrain):
 
 
         ## Get image paths
-        image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_train, img_format='jpg')
-        # image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_test, img_format='jpg')
+        # image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_train, img_format='jpg')
         # image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_val, img_format='jpg')
+        image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_test, img_format='jpg')
 
         ## Sample n images
         random.shuffle(image_paths)
@@ -186,6 +187,8 @@ class TrainerDensenet_2(BaseTrain):
         ## Get labels_gt
         labels_gt = []
         for image_path in image_paths:
+            # TODO: Image name should have no dot
+            # image_name = os.path.basename(image_path).split('.', 1)[0]
             image_name = os.path.basename(image_path).rsplit('.', 1)[0]
             labels_gt.append(image_label_dict[image_name])
 
@@ -215,19 +218,56 @@ class TrainerDensenet_2(BaseTrain):
         logging.debug('model_name {}'.format(self.config.model_name))
         logging.debug('features {}'.format(features.shape))
 
-        labels_pred, labels_pred_cls = self.sess.run([
+
+        ## Predict in batches
+        num_images = len(image_paths)
+        batch_size = self.config.batch_size_pred
+        iters = int(num_images/batch_size)
+        print('\nnum_images: {}'.format(num_images))
+        print('batch_size: {}'.format(batch_size))
+        labels_pred_cls = []
+
+        idx_start = 0
+        idx_end = 0
+        for iter_no in range(iters):
+            idx_start = iter_no * batch_size
+            idx_end = idx_start + batch_size
+            logging.debug('idx:[{}-{}]'.format(idx_start, idx_end))
+
+            labels_pred_batch, labels_pred_cls_batch = self.sess.run([
                     self.model.labels_pred, 
                     self.model.labels_pred_cls, 
                     ],
                 feed_dict={
-                    self.model.features: features, 
-                    # self.model.labels: labels
+                    self.model.features: features[idx_start:idx_end], 
                     }
                 )
 
-        logging.debug('labels_pred_cls {}'.format(labels_pred_cls))
-        logging.debug('labels_pred {}'.format(labels_pred))
+            logging.debug('labels_gt             {}'.format(np.array(labels_gt[idx_start: idx_end])))
+            logging.debug('labels_pred_cls_batch {}'.format(labels_pred_cls_batch))
+            labels_pred_cls = labels_pred_cls + labels_pred_cls_batch.tolist()
 
+        ## For images < batch_size and For images which do not fit the last batch
+        idx_start = iters * batch_size
+        idx_end = idx_start + (num_images % batch_size)
+        logging.debug('idx:[{}-{}]'.format(idx_start, idx_end))
+        if(num_images % batch_size):
+            labels_pred_batch, labels_pred_cls_batch = self.sess.run([
+                    self.model.labels_pred, 
+                    self.model.labels_pred_cls, 
+                    ],
+                feed_dict={
+                    self.model.features: features[idx_start:idx_end], 
+                    }
+                )
+            logging.debug('labels_gt             {}'.format(labels_gt[idx_start: idx_end]))
+            logging.debug('labels_pred_cls_batch {}'.format(labels_pred_cls_batch))
+
+            labels_pred_cls = labels_pred_cls + labels_pred_cls_batch.tolist()
+
+
+
+        
         # # TODO: Don't shuffle else labels will mismatch
         # x_key = self.config.model_name + '_input'
         # predict_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -287,7 +327,7 @@ class TrainerDensenet_2(BaseTrain):
             print(sess.run(confusion))
 
         # # Plot and save confusion matrix
-        # utils.get_confusion_matrix(self.config, labels_gt, pred_labels)
+        utils.get_confusion_matrix(self.config, labels_gt, labels_pred_cls)
 
 
 
