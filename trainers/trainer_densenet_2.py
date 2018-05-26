@@ -30,7 +30,7 @@ from data_handler.tfrecords_densenet import TFRecordsDensenet
 from models.model_densenet import ModelDensenet
 from trainers.trainer_densenet import TrainerDensenet
 from utils.config import process_config
-from utils.tf_logger import TFLogger
+# from utils.tf_logger import TFLogger
 import utils.utils as utils
 import utils.utils_image as utils_image
 

@@ -23,7 +23,7 @@ from trainers.trainer_densenet import TrainerDensenet
 from trainers.trainer_densenet_2 import TrainerDensenet_2
 from utils.config import process_config
 import utils.utils as utils
-from utils.tf_logger import TFLogger
+# from utils.tf_logger import TFLogger
 
 
 def main():
