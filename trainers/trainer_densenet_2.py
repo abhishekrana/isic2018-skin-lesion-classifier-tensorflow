@@ -41,13 +41,11 @@ class TrainerDensenet_2(BaseTrain):
     def __init__(self, sess, model, data, config,logger):
         super(TrainerDensenet_2, self).__init__(sess, model, data, config,logger)
 
-        # sess.run(tf.initialize_all_variables())
         self.summary_writer = tf.summary.FileWriter(
                                                 os.path.join(self.config.summary_dir, self.config.mode),
                                                 graph=self.sess.graph, flush_secs=30)
             
 
-    # def run_epoch(self, is_train, num_steps, iters_done, summary_writer, epoch):
     def run_epoch_train(self, mode, epoch):
 
         assert (mode=='train')
@@ -203,11 +201,6 @@ class TrainerDensenet_2(BaseTrain):
             ## Resize and center crop image. size: (width, height)
             image = ImageOps.fit(image, (self.config.tfr_image_width, self.config.tfr_image_height), Image.LANCZOS, 0, (0.5, 0.5))
 
-
-            # img = cv2.imread(image_path)
-            # img = cv2.resize(img, (224, 224))
-
-
             ## Preprocess images
             image = np.float32(np.array(image))
             image = self.data.preprocess_data(image)
@@ -223,8 +216,8 @@ class TrainerDensenet_2(BaseTrain):
         num_images = len(image_paths)
         batch_size = self.config.batch_size_pred
         iters = int(num_images/batch_size)
-        print('\nnum_images: {}'.format(num_images))
-        print('batch_size: {}'.format(batch_size))
+        logging.debug('num_images {}'.format(num_images))
+        logging.debug('batch_size {}'.format(batch_size))
         labels_pred_cls = []
 
         idx_start = 0
@@ -266,55 +259,6 @@ class TrainerDensenet_2(BaseTrain):
             labels_pred_cls = labels_pred_cls + labels_pred_cls_batch.tolist()
 
 
-
-        
-        # # TODO: Don't shuffle else labels will mismatch
-        # x_key = self.config.model_name + '_input'
-        # predict_input_fn = tf.estimator.inputs.numpy_input_fn(
-        #         x={x_key: images},
-        #         y=None,
-        #         batch_size=self.config.batch_size_pred,
-        #         num_epochs=1,
-        #         shuffle=False,
-        #         queue_capacity=1000,
-        #         # In order to have predicted and repeatable order of reading and enqueueing,
-        #         # such as in prediction and evaluation mode, num_threads should be 1.
-        #         num_threads=1)
-
-        # with tf.Session() as sess:
-        #     init_op = tf.global_variables_initializer()
-        #     sess.run(init_op)
-
-        #     # sess.run(self.model.model.output, feed_dict={self.model.model.input:images})
-        #     # sess.run(self.model.model['class_prob'], feed_dict={self.model.model.input:images})
-        #     # op = self.model.model.get_layer('class_prob')
-        #     # op = self.model.model.get_layer('class_prob')
-        #     # op = self.model.model.layers[0]
-        #     op = self.model.model.get_layer('dense_1')
-        #     out = sess.run(op, 
-        #             feed_dict={self.model.model.input:images})
-        #     logging.debug('out {}'.format(out))
-        # exit(0)
-
-
-        # checkpoint_path = None
-        # if not self.config.predict_weights_path:
-        #     checkpoint_path = self.config.predict_weights_path
-
-        # NOTE: predictions is <generator object Estimator.predict> and hence (maybe) we can dereference it only once.
-        # TODO: Check predict_keys
-        # predictions = self.estimator.predict(
-        #                                 input_fn=predict_input_fn,
-        #                                 checkpoint_path=checkpoint_path,
-        #                                 hooks=None,
-        #                                 predict_keys=None,
-        #                                 yield_single_examples=True
-        #                                 )
-
-        # class_prob = [p['class_prob'] for p in predictions]
-        # # class_prob = [p['dense_4'] for p in predictions]
-        # pred_labels = np.argmax(np.array(class_prob), axis=1)
-
         for label_gt, label_pred_cls in zip(labels_gt, labels_pred_cls):
             print('GT, PRED: [{}, {}]'.format(label_gt, label_pred_cls))
 
@@ -326,114 +270,7 @@ class TrainerDensenet_2(BaseTrain):
         with tf.Session() as sess:
             print(sess.run(confusion))
 
-        # # Plot and save confusion matrix
+        ## Plot and save confusion matrix
         utils.get_confusion_matrix(self.config, labels_gt, labels_pred_cls)
-
-
-
-
-
-# if __name__ == '__main__':
-
-#     ## Configuration
-#     try:
-#         args = utils.get_args()
-#         config = process_config(args)
-#     except:
-#         print("missing or invalid arguments")
-#         exit(0)
-
-#     ## Logger
-#     utils.logger_init(config, logging.DEBUG) 
-
-#     # debug_mode = False
-#     # if len(sys.argv) > 1:
-#     #     if sys.argv[1] == '--debug':
-#     #         debug_mode = True
-#     #         logging.debug('Argument: {}'.format(sys.argv[1]))
-
-#     ## GPU
-#     sess_config = tf.ConfigProto()
-#     sess_config.gpu_options.allow_growth = True
-
-
-#     ## Save context
-#     context = {}
-#     context['epoch'] = 0
-#     context['step'] = 0
-#     context['iterations'] = 0
-#     context['iters_done'] = 0
-#     context['iters'] = 0
-#     context['cost'] = 0
-#     context['feat'] = 0
-#     context['timestamp_start'] = datetime.datetime.now().strftime("%Y-%m-%d-%H_%M_%S")
-#     context['timestamp_end'] = ''
-
-
-#     # Initialize Logger
-#     utils.logger_init(config, logging.DEBUG) 
-#     tf.logging.set_verbosity(tf.logging.DEBUG)
-
-
-#     ## Register signal handler
-#     utils.signal_handler(config)
-
-#     ## Set seed values to reproduce results
-#     random.seed(config.seed)
-#     np.random.seed(config.seed)
-#     tf.set_random_seed(config.seed)
-
-
-#     ## Create output dirs
-#     # utils.remove_dirs([os.path.join(config.output_path, config.exp_name)])
-#     utils.create_dirs([config.summary_dir, config.checkpoint_dir, config.tfrecords_path_train,
-#                       config.tfrecords_path_val, config.tfrecords_path_test])
-
-#     ## Save code
-#     utils.save_code(config)
-    
-#     with tf.Session(config=sess_config) as sess:
-
-#         ## Initialze/Load variables
-#         # latest_checkpoint = tf.train.latest_checkpoint('output')
-#         # if config.pre_trained_model_path:
-#         #     models[0].saver.restore(sess, config.pre_trained_model_path)
-#         #     logging.debug('Restored pre_trained_model_path {}'.format(config.pre_trained_model_path))
-#         # elif latest_checkpoint:
-#         #     models[0].saver.restore(sess, latest_checkpoint)
-#         #     logging.debug('Restored latest_checkpoint {}'.format(config.pre_trained_model_path))
-#         # else:
-#         #     sess.run(tf.global_variables_initializer())
-
-#         sess.run(tf.global_variables_initializer())
-
-#         ## Create TF Records
-#         if (config.mode == 'tfr'):
-#             TFRecordsDensenet(config)
-#             exit(0)
-
-
-#         ## Create data generator using TF Records
-#         data = DataGeneratorDensenet(config)
-#         filenames_regex = os.path.join(config.tfrecords_path_train, '*.tfr')
-#         filenames = glob.glob(filenames_regex)
-#         logging.debug('filenames {}'.format(filenames))
-
-#         ## Create model
-#         model = ModelDensenet(config)
-#         model2 = model.build_model()
-
-
-#         ## Create Trainer
-#         logger = ''
-#         trainer = TrainerDensenet(sess, model, data, config, logger, context, filenames)
-
-#         ## TRAINING
-#         # trainer.train()
-#         iters_done = 0
-#         summary_writer = ''
-#         epoch = 0
-#         trainer.run_epochs(iters_done, summary_writer, epoch, model2, mode='TRAIN')
-
 
 

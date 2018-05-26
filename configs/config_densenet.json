@@ -1,6 +1,9 @@
 {
   "exp_name": "densenet",
 
+  "model_name": "densenet121",
+  "_model_name": "resnet50",
+
   "labels":{"MEL": 0, "NV": 1, "BCC": 2, "AKIEC": 3, "BKL": 4, "DF": 5, "VASC": 6},
   "num_classes":7,
 
@@ -17,26 +20,23 @@
   "tfr_image_width":224,
   "tfr_image_height":224,
   "tfr_image_channels":3,
-  "tfr_images_per_record":50000,
+  "tfr_images_per_record":100000,
 
   "batch_size": 16,
   "batch_size_eval": 2,
-  "_batch_size_pred": 10,
-  "_batch_size": 4,
-  "_batch_size_eval": 4,
   "batch_size_pred": 8,
   "data_gen_buffer_size": 2048,
   "data_gen_num_parallel_reads":4,
-  "_data_gen_num_parallel_calls":4,
   "data_gen_num_parallel_calls":8,
   "data_gen_prefetch_buffer_size":2,
 
-  "_learning_rate": 0.001,
+  "optimizer": "adam",
+  "_optimizer": "rms_prop",
+  "_optimizer": "gradient_descent",
   "learning_rate": 1e-5,
   "train_max_steps":10000,
-  "_train_save_checkpoints_steps": 500,
-  "train_save_summary_steps": 200,
-  "train_save_checkpoints_steps": 200,
+  "train_save_summary_steps": 500,
+  "train_save_checkpoints_steps": 500,
   "train_keep_checkpoint_max":5,
 
   "debug": 0,
@@ -46,12 +46,13 @@
   "debug_test_images_count": 1000,
   "seed": 7,
 
-  "_pre_trained_model": "output/densenet/checkpoints/keras/model.ckpt-8452",
+  "_pre_trained_model": "output/densenet/checkpoints/model.ckpt-8452",
   "pre_trained_model": "",
 
   "predict_num_images": 1000,
 
   "output_path": "output",
   "num_epochs": 5000
+
 }
 

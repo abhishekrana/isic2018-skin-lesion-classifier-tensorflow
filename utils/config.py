@@ -7,11 +7,6 @@ import os
 
 
 def get_config_from_json(json_file):
-    """
-    Get the config from a json file
-    :param json_file:
-    :return: config(namespace) or config(dictionary)
-    """
     # Parse the configurations from the config json file provided
     with open(json_file, 'r') as config_file:
         config_dict = json.load(config_file)
@@ -21,7 +16,6 @@ def get_config_from_json(json_file):
         # Ignore comments
         if name[0] != '_':
             config_dict_mod[name] = value
-
 
     # Convert the dictionary to a namespace using bunch lib
     config = Bunch(config_dict_mod)
@@ -38,11 +32,12 @@ def process_config(args):
     config.summary_dir = os.path.join(config.output_path, config.exp_name, "summary/")
     config.checkpoint_dir = os.path.join(config.output_path, config.exp_name, "checkpoints/")
     config.image_shape = (config.tfr_image_height, config.tfr_image_width, config.tfr_image_channels)
+
     # config.model_name = 'vgg16'
     # config.model_name = 'xception'
     # config.model_name = 'resnet50'
     # config.model_name = 'inception_resnet_v2'
-    config.model_name = 'densenet121'
+    # config.model_name = 'densenet121'
     # config.model_name = 'densenet169'
     # config.model_name = 'densenet201'
 
