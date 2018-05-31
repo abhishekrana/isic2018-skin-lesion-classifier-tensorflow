@@ -19,6 +19,7 @@ from itertools import product
 # Custom loss function with costs
 
 def w_categorical_crossentropy(y_true, y_pred, weights):
+    print(y_true)
     nb_cl = len(weights)
     final_mask = K.zeros_like(y_pred[:, 0])
     y_pred_max = K.max(y_pred, axis=1)
