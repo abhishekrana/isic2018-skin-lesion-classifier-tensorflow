@@ -71,11 +71,12 @@ class ModelDensenet(BaseModel):
             ## Loss
             epsilon = tf.constant(value=1e-10)
             logits = self.logits + epsilon
-            label_flat = tf.reshape(self.labels, (-1, 1))
-            labels = tf.reshape(tf.one_hot(label_flat, depth=self.config.num_classes), (-1, self.config.num_classes))
-            labels = tf.argmax(labels)
+            #label_flat = tf.reshape(self.labels, (-1, 1))
+            #labels = tf.reshape(tf.one_hot(label_flat, depth=self.config.num_classes), (-1, self.config.num_classes))
+            #labels = tf.argmax(labels)
+            labels = self.labels
             softmax = tf.nn.softmax(logits)
-            cross_entropy = -tf.reduce_sum(tf.mul(labels * tf.log(softmax + epsilon), coefficients), reduction_indices=[1])
+            cross_entropy = -tf.reduce_sum(tf.multiply(labels * tf.log(softmax + epsilon), self.config.class_weight_dict), reduction_indices=[1])
             cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
             tf.add_to_collection('losses', cross_entropy_mean)
             self.loss = tf.add_n(tf.get_collection('losses'), name='total_loss')
