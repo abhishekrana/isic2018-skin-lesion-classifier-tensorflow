@@ -27,6 +27,9 @@ from tensorflow.python.keras.applications.xception import Xception
 from tensorflow.python.keras.applications.resnet50 import ResNet50
 from tensorflow.python.keras.applications.inception_resnet_v2 import InceptionResNetV2
 from tensorflow.python.keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
+import utils.w_categorical_crossentropy as wcce
+from functools import partial
+import pickle
 
 class ModelDensenet(BaseModel):
 
@@ -62,7 +65,14 @@ class ModelDensenet(BaseModel):
 
 
             ## Loss
-            self.loss = tf.reduce_mean(cross_entropy)
+            with open("../utils/R-50.pkl", "rb") as f:
+                u = pickle._Unpickler(f)
+                u.encoding = 'latin1'
+                weights = u.load()
+            
+            self.loss = wcce.w_categorical_crossentropy(self.labels, self.logits, weights)
+
+            # self.loss = tf.reduce_mean(cross_entropy)
 
             ## Optimizer
             if self.config.optimizer == 'adam':
@@ -146,7 +156,6 @@ class ModelDensenet(BaseModel):
         else:
             logging.error('Unknown model_name {}'.format(model_name))
             exit(1)
-
 
         return logits
 
