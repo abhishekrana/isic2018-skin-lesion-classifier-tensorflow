@@ -66,10 +66,19 @@ class ModelDensenet(BaseModel):
 
             # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
-            w_cross_entropy = wcce.w_categorical_crossentropy(self.labels, self.labels_pred_cls, weights)
+            # w_cross_entropy = wcce.w_categorical_crossentropy(self.labels, self.labels_pred_cls, weights)
 
             ## Loss
-            self.loss = w_cross_entropy
+            epsilon = tf.constant(value=1e-10)
+            logits = logits + epsilon
+            label_flat = tf.reshape(labels, (-1, 1))
+            labels = tf.reshape(tf.one_hot(label_flat, depth=num_classes), (-1, num_classes))
+            labels = tf.argmax(labels)
+            softmax = tf.nn.softmax(logits)
+            cross_entropy = -tf.reduce_sum(tf.mul(labels * tf.log(softmax + epsilon), coefficients), reduction_indices=[1])
+            cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
+            tf.add_to_collection('losses', cross_entropy_mean)
+            self.loss = tf.add_n(tf.get_collection('losses'), name='total_loss')
 
             # self.loss = tf.reduce_mean(cross_entropy)
 
