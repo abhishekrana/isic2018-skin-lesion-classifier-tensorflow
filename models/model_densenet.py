@@ -28,6 +28,9 @@ from tensorflow.python.keras.applications.xception import Xception
 from tensorflow.python.keras.applications.resnet50 import ResNet50
 from tensorflow.python.keras.applications.inception_resnet_v2 import InceptionResNetV2
 from tensorflow.python.keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
+import utils.w_categorical_crossentropy as wcce
+from functools import partial
+import pickle
 
 from tensorboard import summary as summary_lib
 
@@ -59,14 +62,29 @@ class ModelDensenet(BaseModel):
         self.labels_pred_cls = tf.argmax(input=self.labels_pred_prob, axis=1)
 
         if (mode=='train') or (mode=='eval'):
+            with open("../utils/R-50.pkl", "rb") as f:
+                u = pickle._Unpickler(f)
+                u.encoding = 'latin1'
+                weights = u.load()
 
             # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
-
+            # w_cross_entropy = wcce.w_categorical_crossentropy(self.labels, self.labels_pred_cls, weights)
 
             ## Loss
-            self.loss = tf.reduce_mean(cross_entropy)
+            # epsilon = tf.constant(value=1e-10)
+            # logits = self.logits + epsilon
+            # label_flat = tf.reshape(self.labels, (-1, 1))
+            # labels = tf.reshape(tf.one_hot(label_flat, depth=self.config.num_classes), (-1, self.config.num_classes))
+            # labels = tf.argmax(labels)
+            # labels = self.labels
+            # softmax = tf.nn.softmax(logits)
+            # cross_entropy = -tf.reduce_sum(tf.multiply(labels * tf.log(softmax + epsilon), self.config.class_weight_dict), reduction_indices=[1])
+            # cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
+            # tf.add_to_collection('losses', cross_entropy_mean)
+            # self.loss = tf.add_n(tf.get_collection('losses'), name='total_loss')
 
+            self.loss = tf.reduce_mean(cross_entropy)
             ## Optimizer
             if self.config.optimizer == 'adam':
                 optimizer = tf.train.AdamOptimizer(learning_rate=self.config.learning_rate)
@@ -169,7 +187,6 @@ class ModelDensenet(BaseModel):
         else:
             logging.error('Unknown model_name {}'.format(model_name))
             exit(1)
-
 
         return logits
 
