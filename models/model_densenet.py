@@ -10,6 +10,7 @@ from base.base_model import BaseModel
 
 import os
 import logging
+import numpy as np
 
 import tensorflow as tf
 from tensorflow.python.keras import models
@@ -27,6 +28,8 @@ from tensorflow.python.keras.applications.xception import Xception
 from tensorflow.python.keras.applications.resnet50 import ResNet50
 from tensorflow.python.keras.applications.inception_resnet_v2 import InceptionResNetV2
 from tensorflow.python.keras.applications.densenet import DenseNet121, DenseNet169, DenseNet201
+
+from tensorboard import summary as summary_lib
 
 class ModelDensenet(BaseModel):
 
@@ -52,8 +55,8 @@ class ModelDensenet(BaseModel):
         self.logits = self.create_model()
 
 
-        self.labels_pred = tf.nn.softmax(logits=self.logits)
-        self.labels_pred_cls = tf.argmax(input=self.labels_pred, axis=1)
+        self.labels_pred_prob = tf.nn.softmax(logits=self.logits)
+        self.labels_pred_cls = tf.argmax(input=self.labels_pred_prob, axis=1)
 
         if (mode=='train') or (mode=='eval'):
 
@@ -79,13 +82,24 @@ class ModelDensenet(BaseModel):
             ## Train op
             self.train_op = optimizer.minimize(loss=self.loss, global_step=tf.train.get_global_step())
 
+
             ## Evaluation metrics
+            labels_gt = tf.argmax(self.labels, axis=1)
             self.metrics = \
             {
-                # "accuracy": tf.metrics.accuracy(labels, self.labels_pred_cls)
-                "accuracy": tf.metrics.accuracy(tf.argmax(self.labels, axis=1), self.labels_pred_cls)
+                "accuracy":                 tf.metrics.accuracy(labels=labels_gt, predictions=self.labels_pred_cls),
+                "auc/ROC":                  tf.metrics.auc(labels=labels_gt, predictions=tf.reduce_max(self.labels_pred_prob, axis=1), num_thresholds=200, curve='ROC', summation_method='careful_interpolation'),
+                "auc/PR":                   tf.metrics.auc(labels=labels_gt, predictions=tf.reduce_max(self.labels_pred_prob, axis=1), num_thresholds=200, curve='PR', summation_method='careful_interpolation'),
+                "precision":                tf.metrics.precision(labels=labels_gt, predictions=self.labels_pred_cls),
+                "recall":                   tf.metrics.recall(labels=labels_gt, predictions=self.labels_pred_cls),
+                "true_positives":           tf.metrics.true_positives(labels=labels_gt, predictions=self.labels_pred_cls),
+                "false_positives":          tf.metrics.false_positives(labels=labels_gt, predictions=self.labels_pred_cls),
+                "true_negatives":           tf.metrics.true_negatives(labels=labels_gt, predictions=self.labels_pred_cls),
+                "false_negatives":          tf.metrics.false_negatives(labels=labels_gt, predictions=self.labels_pred_cls)
             }
 
+            # self.tf_print_op = tf.metrics.precision_at_thresholds(labels=labels_gt, predictions=tf.reduce_max(self.labels_pred_prob, axis=1), thresholds=thresholds),
+            # self.tf_print_op = tf.Print(self.tf_print_op, [self.tf_print_op, tf.shape(self.tf_print_op)], '\ntf_print_op\n', summarize=20)
 
         ## Save Model
         # TODO: Set up the Saver after setting up the AdamOptimizer because ADAM has state (namely per-weight learning rates) that need to be restored as well.
@@ -97,9 +111,16 @@ class ModelDensenet(BaseModel):
             return
 
 
+        ## Summaries
         tf.summary.scalar('loss', self.loss)
-        tf.summary.scalar('accuracy/value', self.metrics['accuracy'][0])
-        # tf.summary.scalar('accuracy/update_op', self.metrics['accuracy'][1])
+        with tf.name_scope('metrics'):
+            for metric_name, metric in self.metrics.items():
+                m_name = metric_name + '//' + metric[0].name.replace(':', '_')
+                logging.debug('m_name {}'.format(m_name))
+                tf.summary.scalar(m_name , metric[0])
+
+        # self.summary_pr = summary_lib.pr_curve('precision_recall', predictions=self.labels_pred_cls, labels=labels_gt.astype(bool), num_thresholds=21)
+        # tf.summary.pr_curve('loss', tf.metrics.precision_at_thresholds(labels=labels_pr, predictions=predictions_pr, thresholds=[0.1, 0.5, 0.9]))
 
         self.summary_op = tf.summary.merge_all()
 
@@ -138,10 +159,12 @@ class ModelDensenet(BaseModel):
         ## Densenet169
         elif self.config.model_name == 'densenet169':
             base_model = DenseNet169(weights='imagenet', include_top=False, input_tensor=self.features, input_shape=input_shape)
+            logits = self.model_top_densenet121(base_model)
 
         ## Densenet201
         elif self.config.model_name == 'densenet201':
             base_model = DenseNet201(weights='imagenet', include_top=False, input_tensor=self.features, input_shape=input_shape)
+            logits = self.model_top_densenet121(base_model)
 
         else:
             logging.error('Unknown model_name {}'.format(model_name))
@@ -210,7 +233,6 @@ class ModelDensenet(BaseModel):
 
         return logits
 
-
 """
 # your class weights
 # class_weights = tf.constant([[1.0, 2.0, 3.0]])
@@ -221,4 +243,12 @@ class ModelDensenet(BaseModel):
 
 # # Scale the cost by the class weights
 # scaled_error = tf.mul(error, class_weight)
+
+
+thresholds=np.arange(0.1, 1, 0.1).tolist()
+
+
+labels_pr = tf.constant([False, True, True, False, True], dtype=tf.bool)
+predictions_pr = tf.random_uniform(labels_pr.get_shape(), maxval=1.0)
+self.summary_pr_op = summary_lib.pr_curve('precision_recall', predictions=predictions_pr, labels=labels_pr, num_thresholds=21)
 """

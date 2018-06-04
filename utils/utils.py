@@ -14,10 +14,17 @@ import sklearn
 import glob
 import itertools
 import numpy as np
+import matplotlib
+# import matplotlib; matplotlib.pyplot.switch_backend('agg')
 import matplotlib.pyplot as plt
 from sklearn import svm, datasets
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import roc_curve, auc
+
+from textwrap import wrap
+import re
+import tfplot
 
 import tensorflow as tf
 
@@ -308,3 +315,162 @@ def get_files_from_pattern(file_path_pattern):
     return file_path_names
 
 
+
+def summary_confusion_matrix(config, correct_labels, predict_labels, labels, title='Confusion matrix', tensor_name = 'MyFigure/image', normalize=False):
+    ''' 
+    Parameters:
+        correct_labels                  : These are your true classification categories.
+        predict_labels                  : These are you predicted classification categories
+        labels                          : This is a lit of labels which will be used to display the axix labels
+        title='Confusion matrix'        : Title for your matrix
+        tensor_name = 'MyFigure/image'  : Name for the output summay tensor
+
+    Returns:
+        summary: TensorFlow summary 
+
+    Other itema to note:
+        - Depending on the number of category and the data , you may have to modify the figzie, font sizes etc. 
+        - Currently, some of the ticks dont line up due to rotations.
+    '''
+
+    labels_map_inv = {v: k for k, v in config.labels.items()}
+    correct_labels = [labels_map_inv[label_idx] for label_idx in correct_labels]
+    predict_labels = [labels_map_inv[label_idx] for label_idx in predict_labels]
+
+    class_names = []
+    for key_val in sorted(config.labels.items(), key=lambda x: x[1]):
+        class_names.append(key_val[0])
+
+    cm = confusion_matrix(y_true=correct_labels, y_pred=predict_labels, labels=class_names)
+    if normalize:
+        cm = cm.astype('float')*10 / cm.sum(axis=1)[:, np.newaxis]
+        cm = np.nan_to_num(cm, copy=True)
+        cm = cm.astype('int')
+
+    np.set_printoptions(precision=2)
+    #fig, ax = matplotlib.figure.Figure()
+
+    fig = matplotlib.figure.Figure(figsize=(7, 7), dpi=320, facecolor='w', edgecolor='k')
+    ax = fig.add_subplot(1, 1, 1)
+    im = ax.imshow(cm, cmap='Oranges')
+
+    classes = [re.sub(r'([a-z](?=[A-Z])|[A-Z](?=[A-Z][a-z]))', r'\1 ', x) for x in labels]
+    classes = ['\n'.join(wrap(l, 40)) for l in classes]
+
+    tick_marks = np.arange(len(classes))
+
+    ax.set_xlabel('Predicted', fontsize=7)
+    ax.set_xticks(tick_marks)
+    c = ax.set_xticklabels(classes, fontsize=4, rotation=-90,  ha='center')
+    ax.xaxis.set_label_position('bottom')
+    ax.xaxis.tick_bottom()
+
+    ax.set_ylabel('True Label', fontsize=7)
+    ax.set_yticks(tick_marks)
+    ax.set_yticklabels(classes, fontsize=4, va ='center')
+    ax.yaxis.set_label_position('left')
+    ax.yaxis.tick_left()
+
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        ax.text(j, i, format(cm[i, j], 'd') if cm[i,j]!=0 else '.', horizontalalignment="center", fontsize=6, verticalalignment='center', color= "black")
+    fig.set_tight_layout(True)
+    summary = tfplot.figure.to_summary(fig, tag=tensor_name)
+    
+    return summary
+
+
+
+# Plot an ROC. pred - the predictions, y - the expected output.
+# def plot_roc(y_pred, y_true, pos_label):
+#     fpr, tpr, _ = roc_curve(y_true, y_pred, pos_label)
+#     roc_auc = auc(fpr, tpr)
+
+#     plt.figure()
+#     plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
+#     plt.plot([0, 1], [0, 1], 'k--')
+#     plt.xlim([0.0, 1.0])
+#     plt.ylim([0.0, 1.05])
+#     plt.xlabel('False Positive Rate')
+#     plt.ylabel('True Positive Rate')
+#     plt.title('Receiver Operating Characteristic (ROC)')
+#     plt.legend(loc="lower right")
+#     plt.show()
+
+def summary_roc(config, correct_labels, predict_labels, labels, title='Confusion matrix', tensor_name = 'MyFigure/image', normalize=False):
+    y_true = correct_labels
+    y_pred = predict_labels
+
+    # y_true = [0,0,0,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2]
+    # y_pred = [0,0,0,0,0,1,1,1,0,0,1,1,1,2,1,1,2,2,2,2,2,2,2,2,2,2,2]
+
+    # class_names = ['cats', 'dogs', 'rabbits']
+    # class_names_2 = ['cats', 'dogs']
+    # y_true = [0,0,1,1,2,2]
+    # y_pred = [0,0,1,1,1,2]
+
+    classes = np.unique(np.array(y_true))
+    for cls in classes:
+        
+        print('Class:', cls)
+
+        y_true_class = [1 if x==cls else 0 for x in y_true]
+        print(y_true_class)
+        
+        y_pred_class = [1 if x==cls else 0 for x in y_pred]
+        print(y_pred_class)
+        
+        # plot_roc(y_pred_class, y_true_class, pos_label=None)
+        fpr, tpr, _ = roc_curve(y_true_class, y_pred_class)
+        roc_auc = auc(fpr, tpr)
+
+
+        
+        #metric_confusion_matrix(y_true, y_pred, class_names)
+        # metric_confusion_matrix(y_true_class, y_pred_class, [class_names[cls]] + ['rest'])
+
+        np.set_printoptions(precision=2)
+        #fig, ax = matplotlib.figure.Figure()
+
+        fig = matplotlib.figure.Figure(figsize=(7, 7), dpi=320, facecolor='w', edgecolor='k')
+        ax = fig.add_subplot(1, 1, 1)
+
+
+        # labels_map_inv = {v: k for k, v in config.labels.items()}
+        # correct_labels = [labels_map_inv[label_idx] for label_idx in correct_labels]
+        # predict_labels = [labels_map_inv[label_idx] for label_idx in predict_labels]
+        # class_names = []
+        # for key_val in sorted(config.labels.items(), key=lambda x: x[1]):
+        #     class_names.append(key_val[0])
+        # cm = confusion_matrix(y_true=correct_labels, y_pred=predict_labels, labels=class_names)
+        # im = ax.imshow(cm, cmap='Oranges')
+
+        im = plt.plot(fpr, tpr)
+
+        classes = [re.sub(r'([a-z](?=[A-Z])|[A-Z](?=[A-Z][a-z]))', r'\1 ', x) for x in labels]
+        classes = ['\n'.join(wrap(l, 40)) for l in classes]
+
+        tick_marks = np.arange(len(classes))
+
+        ax.set_xlabel('Predicted', fontsize=7)
+        ax.set_xticks(tick_marks)
+        c = ax.set_xticklabels(classes, fontsize=4, rotation=-90,  ha='center')
+        ax.xaxis.set_label_position('bottom')
+        ax.xaxis.tick_bottom()
+
+        ax.set_ylabel('True Label', fontsize=7)
+        ax.set_yticks(tick_marks)
+        ax.set_yticklabels(classes, fontsize=4, va ='center')
+        ax.yaxis.set_label_position('left')
+        ax.yaxis.tick_left()
+
+        # for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        #     ax.text(j, i, format(cm[i, j], 'd') if cm[i,j]!=0 else '.', horizontalalignment="center", fontsize=6, verticalalignment='center', color= "black")
+        fig.set_tight_layout(True)
+        summary = tfplot.figure.to_summary(fig, tag=tensor_name)
+        
+        return summary
+
+
+
+
+        

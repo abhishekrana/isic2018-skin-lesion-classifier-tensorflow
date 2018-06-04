@@ -26,6 +26,7 @@ pip install -U scikit-image
 pip install imgaug
 pip install Augmentor
 pip install Pillow
+pip install git+https://github.com/wookayin/tensorflow-plot.git@master
 ```
 
 ## Dataset

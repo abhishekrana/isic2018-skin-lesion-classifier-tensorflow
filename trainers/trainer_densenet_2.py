@@ -69,7 +69,9 @@ class TrainerDensenet_2(BaseTrain):
                         self.model.train_op, 
                         self.model.loss, 
                         self.model.metrics,
-                        self.model.summary_op
+                        self.model.summary_op,
+                        # self.model.summary_pr_op,
+                        # self.model.tf_print_op
                         ],
                     feed_dict={
                         self.model.features: features, 
@@ -81,7 +83,7 @@ class TrainerDensenet_2(BaseTrain):
             # optimizer.minimize() argument list, the variable is increased by one
             global_step = self.sess.run(tf.train.get_global_step())
 
-            logging.debug('Epoch:{}, global_step:{}, step:{}, loss:{}, accuracy:{}'.format(epoch, global_step, step, loss, metrics))
+            logging.debug('Epoch:{}, global_step:{}, step:{}, loss:{}, accuracy:{}'.format(epoch, global_step, step, loss, metrics['accuracy']))
 
             ## Save checkpoints
             if (global_step%self.config.train_save_checkpoints_steps) == 0:
@@ -93,6 +95,7 @@ class TrainerDensenet_2(BaseTrain):
             ## Save summary
             if (global_step%self.config.train_save_summary_steps) == 0:
                 self.summary_writer.add_summary(summary, global_step)
+                # self.summary_writer.add_summary(summary_pr, global_step)
 
 
 
@@ -116,30 +119,37 @@ class TrainerDensenet_2(BaseTrain):
                                 buffer_size=self.config.data_gen_buffer_size
                                 )
         
+        gs_labels_gt = []
+        gs_labels_pred = []
+
         for step in range(num_steps):
 
             try:
-                features_dict, labels = self.sess.run(data_batch)
+                features_dict, labels_gt = self.sess.run(data_batch)
             except Exception:
                 logging.debug('Input data stream read completely {}'.format(Exception))
-                # global_step = self.sess.run(tf.train.get_global_step())
-                # self.summary_writer.add_summary(summary, global_step)
                 # pass
                 return
 
+            ## labels_gt is one-hot
+            gs_labels_gt += np.argmax(labels_gt, axis=1).tolist()
+
             features = features_dict[self.config.model_name + '_input']
 
-            loss, metrics, summary = self.sess.run([
+            loss, metrics, summary, labels_pred_cls = self.sess.run([
                         self.model.loss, 
                         self.model.metrics,
-                        self.model.summary_op
+                        self.model.summary_op,
+                        self.model.labels_pred_cls
+                        # self.model.summary_pr_op,
                         ],
                     feed_dict={
                         self.model.features: features, 
-                        self.model.labels: labels
+                        self.model.labels: labels_gt
                         }
                     )
 
+            gs_labels_pred += labels_pred_cls.tolist()
 
             # global_step refer to the number of batches seen by the graph. When it is passed in the 
             # optimizer.minimize() argument list, the variable is increased by one
@@ -147,9 +157,15 @@ class TrainerDensenet_2(BaseTrain):
 
             logging.debug('Epoch:{}, global_step:{}, step:{}, loss:{}, accuracy:{}'.format(epoch, global_step, step, loss, metrics))
 
-            ## Save summary
-            # if (global_step%self.config.train_save_summary_steps) == 0:
+        ## Save summary
         self.summary_writer.add_summary(summary, global_step)
+        # self.summary_writer.add_summary(summary_pr, global_step)
+
+        # Confusion matrix
+        summary_cm = utils.summary_confusion_matrix(self.config, gs_labels_gt, gs_labels_pred, self.config.labels, tensor_name='val/confusion_matrix')
+        # summary_roc = utils.summary_roc(self.config, gs_labels_gt, gs_labels_pred, self.config.labels, tensor_name='val/roc')
+        self.summary_writer.add_summary(summary_cm, global_step)
+        # self.summary_writer.add_summary(summary_roc, global_step)
 
 
     def evaluate(self):
@@ -228,7 +244,7 @@ class TrainerDensenet_2(BaseTrain):
             logging.debug('idx:[{}-{}]'.format(idx_start, idx_end))
 
             labels_pred_batch, labels_pred_cls_batch = self.sess.run([
-                    self.model.labels_pred, 
+                    self.model.labels_pred_prob,
                     self.model.labels_pred_cls, 
                     ],
                 feed_dict={
@@ -246,7 +262,7 @@ class TrainerDensenet_2(BaseTrain):
         logging.debug('idx:[{}-{}]'.format(idx_start, idx_end))
         if(num_images % batch_size):
             labels_pred_batch, labels_pred_cls_batch = self.sess.run([
-                    self.model.labels_pred, 
+                    self.model.labels_pred_prob,
                     self.model.labels_pred_cls, 
                     ],
                 feed_dict={
@@ -272,5 +288,7 @@ class TrainerDensenet_2(BaseTrain):
 
         ## Plot and save confusion matrix
         utils.get_confusion_matrix(self.config, labels_gt, labels_pred_cls)
+
+
 
 
