@@ -62,11 +62,7 @@ class ModelDensenet(BaseModel):
         self.labels_pred_cls = tf.argmax(input=self.labels_pred_prob, axis=1)
 
         if (mode=='train') or (mode=='eval'):
-            with open("../utils/R-50.pkl", "rb") as f:
-                u = pickle._Unpickler(f)
-                u.encoding = 'latin1'
-                weights = u.load()
-
+            
             # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
             cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
             # w_cross_entropy = wcce.w_categorical_crossentropy(self.labels, self.labels_pred_cls, weights)
