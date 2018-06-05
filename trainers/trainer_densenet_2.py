@@ -62,7 +62,7 @@ class TrainerDensenet_2(BaseTrain):
         
         for step in range(num_steps):
 
-            features_dict, labels = self.sess.run(data_batch)
+            features_dict, labels_gt = self.sess.run(data_batch)
             features = features_dict[self.config.model_name + '_input']
 
             _, loss, metrics, summary = self.sess.run([
@@ -75,7 +75,7 @@ class TrainerDensenet_2(BaseTrain):
                         ],
                     feed_dict={
                         self.model.features: features, 
-                        self.model.labels: labels
+                        self.model.labels: labels_gt
                         }
                     )
 
@@ -289,6 +289,7 @@ class TrainerDensenet_2(BaseTrain):
         ## Plot and save confusion matrix
         utils.get_confusion_matrix(self.config, labels_gt, labels_pred_cls)
 
+        utils.summary_pr_fscore(self.config, labels_gt, labels_pred_cls, self.config.labels)
 
 
 

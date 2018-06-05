@@ -21,6 +21,7 @@ from sklearn import svm, datasets
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import precision_recall_fscore_support
 
 from textwrap import wrap
 import re
@@ -290,8 +291,8 @@ def get_confusion_matrix(config, gt_labels, pred_labels):
 
     ## Compute confusion matrix
     cnf_matrix = confusion_matrix(y_true=gt_labels, y_pred=pred_labels)
-    logging.debug('cnf_matrix {}'.format(cnf_matrix))
-    # np.set_printoptions(precision=2)
+    logging.debug('cnf_matrix \n{}'.format(cnf_matrix))
+    np.set_printoptions(precision=2)
 
     ## Plot non-normalized confusion matrix
     plt.figure()
@@ -470,7 +471,25 @@ def summary_roc(config, correct_labels, predict_labels, labels, title='Confusion
         
         return summary
 
+def summary_pr_fscore(config, correct_labels, predict_labels, labels):
+
+    # labels_map_inv = {v: k for k, v in config.labels.items()}
+    # correct_labels = [labels_map_inv[label_idx] for label_idx in correct_labels]
+    # predict_labels = [labels_map_inv[label_idx] for label_idx in predict_labels]
+
+    class_names = []
+    for key_val in sorted(config.labels.items(), key=lambda x: x[1]):
+        class_names.append(key_val[0])
+
+    # precision, recall, fscore, support = precision_recall_fscore_support(y_true=correct_labels, y_pred=predict_labels, labels=class_names, average=None)
+    precision, recall, fscore, support = precision_recall_fscore_support(y_true=correct_labels, y_pred=predict_labels, average=None)
+
+    logging.debug('{:10.10}  {:12.12}  {:10.10} {:10.10}{:10.10}'.format('Class', 'Precision', 'Recall', 'FScore', 'Support'))
+    for l, p, r, f, s in zip(class_names, precision, recall, fscore, support):
+        logging.debug('{:10} {:10.2} {:10.2} {:10.2} {:10}'.format(l, p, r, f, s))
+
+    print('{:10.10}  {:12.12}  {:10.10} {:10.10}{:10.10}'.format('Class', 'Precision', 'Recall', 'FScore', 'Support'))
+    for l, p, r, f, s in zip(class_names, precision, recall, fscore, support):
+        print('{:10} {:10.2} {:10.2} {:10.2} {:10}'.format(l, p, r, f, s))
 
 
-
-        
