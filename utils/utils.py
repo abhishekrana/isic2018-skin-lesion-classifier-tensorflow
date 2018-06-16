@@ -778,7 +778,7 @@ def gen_roc_curve(config, labels_gt, labels_prob, dataset_split_name):
     colors = cycle(['brown', 'burlywood', 'CadetBlue', 'darkorange', 'cornflowerblue', 'aqua', 'red'])
     for i, color in zip(range(config.num_classes), colors):
         plt.plot(fpr[i], tpr[i], color=color, lw=2,
-                 label='ROC curve of class {0} (area = {1:0.2f})'.format(i, roc_auc[i]))
+                 label='ROC curve of class {0} (area = {1:0.2f})'.format(labels_map_inv[i], roc_auc[i]))
 
     plt.plot([0, 1], [0, 1], 'k--', lw=2)
     plt.xlim([0.0, 1.0])
