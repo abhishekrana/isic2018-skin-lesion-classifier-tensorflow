@@ -7,6 +7,7 @@
   "labels":{"MEL": 0, "NV": 1, "BCC": 2, "AKIEC": 3, "BKL": 4, "DF": 5, "VASC": 6},
   "num_classes":7,
 
+  "_dataset_path_train": "/media/data/mlmiss2018/datasets/dataset/train_aug_rd_10/",
   "dataset_path_train": "datasets/densenet/train",
   "dataset_path_val": "datasets/densenet/val",
   "dataset_path_test": "datasets/densenet/test",
@@ -31,9 +32,11 @@
   "data_gen_prefetch_buffer_size":2,
 
   "optimizer": "adam",
-  "_optimizer": "rms_prop",
   "_optimizer": "gradient_descent",
+  "_optimizer": "rms_prop",
+  "_optimizer": "momentum",
   "learning_rate": 1e-5,
+  "momentum": 0.9,
   "train_max_steps":10000,
   "train_save_summary_steps": 500,
   "train_save_checkpoints_steps": 500,
@@ -41,6 +44,7 @@
 
   "debug": 0,
   "debug_tf_print": 0,
+  "_debug_train_images_count": 100000,
   "debug_train_images_count": 8000,
   "debug_val_images_count": 1015,
   "debug_test_images_count": 1000,

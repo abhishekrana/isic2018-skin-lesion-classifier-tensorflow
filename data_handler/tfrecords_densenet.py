@@ -301,6 +301,7 @@ class TFRecordsDensenet(BaseTFRecords):
                 # Load images
                 img = Image.open(image_path)
 
+
                 # TODO:
                 # Center crop and resize image. size: The requested size in pixels, as a 2-tuple: (width, height)
                 img = ImageOps.fit(img, (self.config.tfr_image_width, self.config.tfr_image_height), Image.LANCZOS, 0, (0.5, 0.5))
@@ -311,6 +312,20 @@ class TFRecordsDensenet(BaseTFRecords):
                 if output_path is not None:
                     img_path_name = os.path.join(os.path.dirname(output_path), os.path.basename(image_path))
                     utils_image.save_image(img, img_path_name)
+
+
+                ## Color constancy
+                # img = utils_image.color_constancy(img, power=6, gamma=None)
+                # if output_path is not None:
+                #     img_path_name = os.path.join(os.path.dirname(output_path), os.path.basename(image_path))
+                #     img_path_name = img_path_name.split('.')[0] + '_ilu.' + img_path_name.split('.')[1]
+
+                #     # utils_image.save_image(img, img_path_name)
+                #     img_save = Image.fromarray(img.astype('uint8'))
+                #     img_save.save(img_path_name)
+
+
+
 
                 # Convert the image to raw bytes.
                 img_bytes = img.tostring()

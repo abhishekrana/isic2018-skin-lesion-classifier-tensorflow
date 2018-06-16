@@ -10,6 +10,7 @@ import tensorflow as tf
 import glob
 import pudb
 import logging
+from bunch import Bunch
 
 import utils.utils as utils
 import utils.utils_image as utils_image
@@ -186,7 +187,7 @@ class DataGeneratorDensenet(BaseData):
 
 
     # def input_fn(self, file_pattern, train, batch_size=32, buffer_size=2048):
-    def input_fn(self, file_pattern, mode, batch_size=32, buffer_size=2048):
+    def input_fn(self, file_pattern, mode, batch_size=32, buffer_size=2048, num_repeat=None):
         """
         Args:
             file_pattern:   Path with pattern of TFRecords. Eg: '/home/*.tfr'
@@ -215,13 +216,17 @@ class DataGeneratorDensenet(BaseData):
             dataset = dataset.shuffle(buffer_size=buffer_size)
 
             # Allow infinite reading of the data.
-            num_repeat = None
+            num_repeat_mode = None
         else:
             # If testing then don't shuffle the data. Only go through the data once.
-            num_repeat = 1
+            num_repeat_mode = 1
+
+        if num_repeat != None:
+            num_repeat_mode = num_repeat
+        logging.debug('num_repeat_mode {}'.format(num_repeat_mode))
 
         # Repeat the dataset the given number of times.
-        dataset = dataset.repeat(num_repeat)
+        dataset = dataset.repeat(num_repeat_mode)
 
         # Parse the serialized data in the TFRecords files.
         # This returns TensorFlow tensors for the image and labels.
@@ -321,7 +326,8 @@ if __name__ == '__main__':
         print("missing or invalid arguments")
         args={}
         args['config_file'] = 'configs/config_densenet.json'
-        args['mode'] = 'predict'
+        args['mode'] = 'train'
+        args['debug'] = 0
         args = Bunch(args)
         config = process_config(args)
 
@@ -334,14 +340,21 @@ if __name__ == '__main__':
     logging.debug('filenames {}'.format(filenames))
 
     data_generator_densenet = DataGeneratorDensenet(config)
-    next_batch = data_generator_densenet.input_fn(filenames=filenames, mode='train')
+    # next_batch = data_generator_densenet.input_fn(filenames=filenames, mode='train')
+    next_batch = data_generator_densenet.input_fn(
+                                file_pattern=os.path.join(config.tfrecords_path_train, '*.tfr'),
+                                mode=config.mode,
+                                batch_size=config.batch_size,
+                                buffer_size=config.data_gen_buffer_size
+                                )
+
     logging.debug('next_batch {}'.format(next_batch))
 
     with tf.Session() as sess:
 
         images_batch, labels_batch = sess.run(next_batch)
 
-        image = images_batch['input_1'][0]
+        image = images_batch['densenet121_input'][0]
         label = labels_batch[0]
         print('labels_batch', labels_batch)
         print(image.shape)

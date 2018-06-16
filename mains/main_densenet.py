@@ -8,6 +8,7 @@ import time
 import random
 import numpy as np
 import logging
+logging.getLogger('parso.python.diff').setLevel('INFO')
 import datetime
 from bunch import Bunch
 
@@ -23,6 +24,7 @@ from trainers.trainer_densenet import TrainerDensenet
 from trainers.trainer_densenet_2 import TrainerDensenet_2
 from utils.config import process_config
 import utils.utils as utils
+import utils.utils_image as utils_image
 # from utils.tf_logger import TFLogger
 
 
@@ -96,8 +98,9 @@ def main():
     timestamp_start = datetime.datetime.now().strftime("%Y-%m-%d-%H_%M_%S")
     logging.debug('timestamp_start {}'.format(timestamp_start))
     logging.debug('mode {}'.format(config.mode))
-    logging.debug('\nConfiguration: \n{}'.format(config))
 
+    ## Print updated configuration
+    logging.debug('\nConfiguration: \n{}'.format(config))
     
     # sess=''
     logger=''
@@ -112,7 +115,8 @@ def main():
 
 
     ## Get and set class weights in config
-    # utils.set_config_class_weight(config, data)
+    utils.set_config_class_weights(config, data)
+
 
 
     ## Create model
@@ -121,6 +125,11 @@ def main():
 
     
     with tf.Session(config=sess_config) as sess:
+
+        if config.debug == '1':
+            # tf.train.start_queue_runners(sess=sess)
+            sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+            # sess = tf_debug.LocalCLIDebugWrapperSession(sess, thread_name_filter="MainThread$")
 
         ## Initialze/Load variables
         latest_checkpoint = tf.train.latest_checkpoint(config.checkpoint_dir)
@@ -134,6 +143,11 @@ def main():
             sess.run(tf.global_variables_initializer())
 
         sess.run(tf.local_variables_initializer())
+
+        # file_pattern=os.path.join(config.tfrecords_path_train, '*.tfr'),
+        # filenames_op = tf.data.Dataset.list_files(file_pattern)
+        # # filenames = sess.run(filenames_op)
+        # logging.debug('filenames {}'.format(y))
 
         ## Create Trainer
         # trainer = TrainerDensenet(sess, model, data, config, logger)
@@ -172,7 +186,9 @@ def main():
 
         ## PREDICTION
         elif (config.mode == 'predict'):
-            trainer.predict()
+            # trainer.predict(dataset_split_name='ds_train')
+            trainer.predict(dataset_split_name='ds_val')
+            trainer.predict(dataset_split_name='ds_test')
 
 
         else:

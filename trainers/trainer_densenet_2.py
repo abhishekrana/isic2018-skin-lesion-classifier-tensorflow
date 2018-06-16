@@ -173,11 +173,23 @@ class TrainerDensenet_2(BaseTrain):
         self.run_epoch_eval(mode='eval', epoch=epoch)
 
 
-    def predict(self):
+    def predict(self, dataset_split_name='ds_test'):
+
+        if dataset_split_name == 'ds_train':
+            image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_train, img_format='jpg')
+        elif dataset_split_name == 'ds_val':
+            images_path = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_val, img_format='jpg')
+        elif dataset_split_name == 'ds_test':
+            images_path = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_test, img_format='jpg')
+        else:
+            logging.error('Unknown dataset_split_name {}', dataset_split_name)
+            exit(1)
+
 
         ## Get image-label mapping
         image_label_dict = {}
         dataset_labels_file_path = 'datasets/densenet/ISIC2018_Task3_Training_GroundTruth.csv'
+        # dataset_labels_file_path = 'ISIC2018_Task3_Training_GroundTruth.csv'
         with open(dataset_labels_file_path) as csvfile:
             read_csv = csv.reader(csvfile, delimiter=',')
             for index, row in enumerate(read_csv):
@@ -188,28 +200,24 @@ class TrainerDensenet_2(BaseTrain):
                 image_label_dict[row[0]] = np.argmax(label_one_hot_encoding)
 
 
-        ## Get image paths
-        # image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_train, img_format='jpg')
-        # image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_val, img_format='jpg')
-        image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_test, img_format='jpg')
-
+        
         ## Sample n images
-        random.shuffle(image_paths)
-        image_paths = image_paths[0:self.config.predict_num_images]
+        # random.shuffle(images_path)
+        images_path = images_path[0:self.config.predict_num_images]
 
 
         ## Get labels_gt
         labels_gt = []
-        for image_path in image_paths:
+        for image_path in images_path:
             # TODO: Image name should have no dot
             # image_name = os.path.basename(image_path).split('.', 1)[0]
             image_name = os.path.basename(image_path).rsplit('.', 1)[0]
             labels_gt.append(image_label_dict[image_name])
 
 
-        image_paths = image_paths[0:self.config.predict_num_images]
+        images_path = images_path[0:self.config.predict_num_images]
         images = []
-        for image_path in image_paths:
+        for image_path in images_path:
 
             ## Load image
             image = Image.open(image_path)
@@ -229,12 +237,13 @@ class TrainerDensenet_2(BaseTrain):
 
 
         ## Predict in batches
-        num_images = len(image_paths)
+        num_images = len(images_path)
         batch_size = self.config.batch_size_pred
         iters = int(num_images/batch_size)
         logging.debug('num_images {}'.format(num_images))
         logging.debug('batch_size {}'.format(batch_size))
         labels_pred_cls = []
+        labels_pred_prob = []
 
         idx_start = 0
         idx_end = 0
@@ -243,7 +252,7 @@ class TrainerDensenet_2(BaseTrain):
             idx_end = idx_start + batch_size
             logging.debug('idx:[{}-{}]'.format(idx_start, idx_end))
 
-            labels_pred_batch, labels_pred_cls_batch = self.sess.run([
+            labels_pred_prob_batch, labels_pred_cls_batch = self.sess.run([
                     self.model.labels_pred_prob,
                     self.model.labels_pred_cls, 
                     ],
@@ -254,14 +263,17 @@ class TrainerDensenet_2(BaseTrain):
 
             logging.debug('labels_gt             {}'.format(np.array(labels_gt[idx_start: idx_end])))
             logging.debug('labels_pred_cls_batch {}'.format(labels_pred_cls_batch))
+            # logging.debug('labels_pred_prob_batch {}'.format(labels_pred_prob_batch))
+
             labels_pred_cls = labels_pred_cls + labels_pred_cls_batch.tolist()
+            labels_pred_prob = labels_pred_prob + labels_pred_prob_batch.tolist()
 
         ## For images < batch_size and For images which do not fit the last batch
         idx_start = iters * batch_size
         idx_end = idx_start + (num_images % batch_size)
         logging.debug('idx:[{}-{}]'.format(idx_start, idx_end))
         if(num_images % batch_size):
-            labels_pred_batch, labels_pred_cls_batch = self.sess.run([
+            labels_pred_prob_batch, labels_pred_cls_batch = self.sess.run([
                     self.model.labels_pred_prob,
                     self.model.labels_pred_cls, 
                     ],
@@ -271,25 +283,39 @@ class TrainerDensenet_2(BaseTrain):
                 )
             logging.debug('labels_gt             {}'.format(labels_gt[idx_start: idx_end]))
             logging.debug('labels_pred_cls_batch {}'.format(labels_pred_cls_batch))
+            # logging.debug('labels_pred_prob_batch {}'.format(labels_pred_prob_batch))
 
             labels_pred_cls = labels_pred_cls + labels_pred_cls_batch.tolist()
+            labels_pred_prob = labels_pred_prob + labels_pred_prob_batch.tolist()
 
 
         for label_gt, label_pred_cls in zip(labels_gt, labels_pred_cls):
             print('GT, PRED: [{}, {}]'.format(label_gt, label_pred_cls))
 
 
+        ### ANALYAIS ###
+
+        ## Plot ROC curve
+        utils.gen_roc_curve(self.config, labels_gt, labels_pred_prob, dataset_split_name)
+
+        ## Plot PR Curve
+        utils.gen_precision_recall_curve(self.config, labels_pred_cls, labels_pred_prob, dataset_split_name)
+
         ## Confusion matrix
-        # https://stackoverflow.com/questions/41617463/tensorflow-confusion-matrix-in-tensorboard
-        confusion = tf.confusion_matrix(labels=labels_gt, predictions=labels_pred_cls, num_classes=self.config.num_classes)
-        logging.debug('Row(GT), Col(Pred)')
-        with tf.Session() as sess:
-            print(sess.run(confusion))
+        # confusion = tf.confusion_matrix(labels=labels_gt, predictions=labels_pred_cls, num_classes=self.config.num_classes)
+        # logging.debug('Row(GT), Col(Pred)')
+        # with tf.Session() as sess:
+        #     print(sess.run(confusion))
+
 
         ## Plot and save confusion matrix
-        utils.get_confusion_matrix(self.config, labels_gt, labels_pred_cls)
+        utils.get_confusion_matrix(self.config, labels_gt, labels_pred_cls, dataset_split_name)
 
+        ## Print PR and F1
         utils.summary_pr_fscore(self.config, labels_gt, labels_pred_cls, self.config.labels)
+
+        ## Plot Metrics
+        utils.get_metrics(self.config, labels_gt, labels_pred_cls, dataset_split_name)
 
 
 

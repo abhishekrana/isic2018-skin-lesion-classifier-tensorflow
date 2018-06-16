@@ -2,6 +2,7 @@
 # Utility functions for images
 ##########################################################################################
 import os
+import cv2
 import glob
 import numpy as np
 from PIL import Image
@@ -63,4 +64,51 @@ def get_images_path_list_from_dir(dir_path, img_format='jpg'):
 def save_image(image_np, image_path_name):
     img = Image.fromarray(image_np)
     img.save(image_path_name)
+
+
+
+def color_constancy(img, power=6, gamma=None):
+    """
+    Parameters
+    ----------
+    img: 2D numpy array
+        The original image with format of (h, w, c)
+    power: int
+        The degree of norm, 6 is used in reference paper
+    gamma: float
+        The value of gamma correction, 2.2 is used in reference paper
+    """
+    ## img = cv2.imread(img_name)
+
+    # img = np.array(Image.open(img_name))
+    img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+
+    img_dtype = img.dtype
+
+    if gamma is not None:
+        img = img.astype('uint8')
+        look_up_table = np.ones((256,1), dtype='uint8') * 0
+        for i in range(256):
+            look_up_table[i][0] = 255*pow(i/255, 1/gamma)
+        img = cv2.LUT(img, look_up_table)
+
+    img = img.astype('float32')
+    img_power = np.power(img, power)
+    rgb_vec = np.power(np.mean(img_power, (0,1)), 1/power)
+    rgb_norm = np.sqrt(np.sum(np.power(rgb_vec, 2.0)))
+    rgb_vec = rgb_vec/rgb_norm
+    rgb_vec = 1/(rgb_vec*np.sqrt(3))
+    img = np.multiply(img, rgb_vec)
+
+    img = cv2.cvtColor(np.array(img), cv2.COLOR_BGR2RGB)
+
+    # img_name_mod = img_name.split('.')[0] + '_ilu.' + img_name.split('.')[1]
+    # img_save = Image.fromarray(img.astype('uint8'))
+    # img_save.save(img_name_mod)
+
+    ## cv2.imwrite(img_name_mod, np.array(img_save))
+
+    # return img
+    return img.astype(img_dtype)
+
 
