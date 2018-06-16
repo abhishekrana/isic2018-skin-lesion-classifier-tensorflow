@@ -115,7 +115,7 @@ def main():
 
 
     ## Get and set class weights in config
-    utils.set_config_class_weights(config, data)
+    # utils.set_config_class_weights(config, data)
 
 
 
