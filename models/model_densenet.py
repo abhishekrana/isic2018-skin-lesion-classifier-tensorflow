@@ -65,9 +65,10 @@ class ModelDensenet(BaseModel):
         if (mode=='train') or (mode=='eval'):
             
             # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
-            cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
+            self.cross_entropy = cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
 
-            # weights = tf.gather(self.config.class_weights, tf.argmax(self.labels, axis=1))
+            # class_weights =  np.array([ 1.2755102,   0.21409838,  2.72108844,  4.53514739,  1.29282482, 12.84109149, 9.44510035])
+            # weights = tf.gather(class_weights, tf.argmax(self.labels, axis=1))
             # cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=self.labels, logits=self.logits, weights=weights)
 
             

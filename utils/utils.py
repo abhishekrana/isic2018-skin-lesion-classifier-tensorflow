@@ -319,8 +319,6 @@ def get_confusion_matrix(config, gt_labels, pred_labels, dataset_split_name):
     logging.debug('cnf_matrix \n{}'.format(cnf_matrix))
     np.set_printoptions(precision=2)
 
-    cnf = np.transpose(cnf_matrix)
-
     ## Plot non-normalized confusion matrix
     # plt.figure(figsize=(5,5))
     plot_confusion_matrix(cnf_matrix, classes=class_names, title='Confusion matrix, without normalization')
@@ -566,6 +564,7 @@ def get_metrics(config, gt_labels, pred_labels, dataset_split_name):
     round_val = 2
 
     metrics = []
+    accuracy_2 = []
     for idx in range(cnf_matrix.shape[0]):
         PPV = 0.0
         TPR = 0.0
@@ -576,6 +575,7 @@ def get_metrics(config, gt_labels, pred_labels, dataset_split_name):
         
         # Power
         TP = cnf_matrix[idx, idx]
+        accuracy_2.append(TP)
         
         # Type I Error
         FP = np.sum(cnf_matrix[idx, :]) - TP
@@ -626,6 +626,7 @@ def get_metrics(config, gt_labels, pred_labels, dataset_split_name):
     metrics_names = ['CLS', 'TP', 'FP', 'FN', 'TN', 'PPV', 'TPR', 'TNR', 'NPV', 'ACC', 'F1', 'TS']
     metrics_df = pd.DataFrame(metrics, index=None, columns=metrics_names)
     print(metrics_df)
+    print('Accuracy_2 [TP/Total]:{}'.format(np.sum(accuracy_2)/np.sum(cnf_matrix)) )
 
     threshold = 0.5
     plot_path = os.path.join(config.output_path, config.exp_name, 'plots', dataset_split_name)

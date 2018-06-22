@@ -223,7 +223,7 @@ class DataGeneratorDensenet(BaseData):
 
         if num_repeat != None:
             num_repeat_mode = num_repeat
-        logging.debug('num_repeat_mode {}'.format(num_repeat_mode))
+        # logging.debug('num_repeat_mode {}'.format(num_repeat_mode))
 
         # Repeat the dataset the given number of times.
         dataset = dataset.repeat(num_repeat_mode)

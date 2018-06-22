@@ -23,7 +23,8 @@ import keras
 import csv
 import cv2
 from PIL import Image, ImageOps
-
+from heapq import nlargest
+import timeit
 
 from data_handler.data_generator_densenet import DataGeneratorDensenet
 from data_handler.tfrecords_densenet import TFRecordsDensenet
@@ -59,7 +60,7 @@ class TrainerDensenet_2(BaseTrain):
                                 batch_size=self.config.batch_size,
                                 buffer_size=self.config.data_gen_buffer_size
                                 )
-        
+
         for step in range(num_steps):
 
             features_dict, labels_gt = self.sess.run(data_batch)
@@ -98,11 +99,185 @@ class TrainerDensenet_2(BaseTrain):
                 # self.summary_writer.add_summary(summary_pr, global_step)
 
 
+    def update_prediction(self, predict_dict, features, labels_gt):
+
+        # total_predict_index = self.config.num_images_per_fold/self.config.batch_size
+        # predict_batch = self.config.batch_patch
+
+        # TODO: Handle last batch
+        iters = int(self.config.num_images_per_fold/self.config.batch_size)
+
+        # for iter_no in range(total_predict_index) :
+        for iter_no in range(iters):
+            # result = dict()
+
+            idx_start = iter_no * self.config.batch_size
+            idx_end = idx_start + self.config.batch_size
+
+            if (idx_end <= len(labels_gt)):
+                features_batch = features[idx_start: idx_end]
+                labels_gt_batch = labels_gt[idx_start: idx_end]
+            else:
+                features_batch = features[idx_start: len(features_batch)]
+                labels_gt_batch = labels_gt[idx_start: len(features_batch)]
+            # features_batch = features[predict_batch*p_idx : predict_batch*(p_idx+1)]
+            # labels_gt_batch = labels_gt[predict_batch*p_idx : predict_batch*(p_idx+1)]
+
+            # TODO: Handle case for last batch
+
+            # start_time2 = timeit.default_timer()
+            cross_entropy = self.sess.run([
+                        self.model.cross_entropy
+                        ],
+                    feed_dict={
+                        self.model.features: features_batch, 
+                        self.model.labels: labels_gt_batch
+                        }
+                    )
+            # print('start2: {}', timeit.default_timer() - start_time2)
+
+            for idx in range(idx_start, idx_end):
+                predict_dict.update({idx: cross_entropy[0][(idx%self.config.batch_size)]})
+
+
+            # result = {idx_start+i: loss[i] for i in range(self.config.batch_size)}
+
+            # temp_x = self.sess.run(self.x_dict, feed_dict=predictor_feed_dict)
+            # if iter_no != 0 :
+            #     for k,v in temp_x.items():
+            #         new_k = k + predict_batch * iter_no
+            #         result[new_k] = v
+            # else :
+            #     for k,v in temp_x.items():
+            #         result[k] = v
+
+            # predict_dict.update(result)
+            # index = nlargest(self.batch_size, predict_dict, key=predict_dict.get)
+            # predict_dict = {s_idx: predict_dict[s_idx] for s_idx in index}
+
+        # g_r_index = list(predict_dict.keys())
+        # features_batch = features[g_r_index]
+        # labels_gt_batch = labels_gt[g_r_index]
+
+
+
+    def run_epoch_train_adaptive(self, mode, epoch):
+
+        assert (mode=='train')
+
+        # TODO: Will loose last fold here
+        k_folds = int(self.config.debug_train_images_count/self.config.num_images_per_fold)
+
+        for k_fold in range(k_folds):
+            # logging.debug('k_fold {}'.format(k_fold))
+
+            data_batch = self.data.input_fn(
+                                        file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
+                                        mode=mode,
+                                        batch_size=self.config.num_images_per_fold,
+                                        buffer_size=self.config.data_gen_buffer_size
+                                        )
+            features_dict, labels_gt = self.sess.run(data_batch)
+            features = features_dict[self.config.model_name + '_input']
+
+            predict_dict = dict()
+            # self.update_prediction(predict_dict, features, labels_gt)
+
+            num_steps = int(len(features)/self.config.batch_size)
+
+            idx_start = 0
+            idx_end = 0
+            num_nlargest_per_fold = 256
+            nlargest_index = []
+            for step in range(num_steps):
+                idx_start = step * self.config.batch_size
+                idx_end = idx_start + self.config.batch_size
+                # logging.debug('idx:[{}-{}]'.format(idx_start, idx_end))
+
+                # features_batch = features[idx_start: idx_end]
+                # labels_gt_batch = labels_gt[idx_start: idx_end]
+
+                # nlargest_index = nlargest(self.config.batch_size, predict_dict, key=predict_dict.get)
+                # for idx in nlargest_index:
+                #     logging.debug('idx Loss : {:4} : {:8.6}'.format(idx, predict_dict[idx]))
+
+                # nlargest_index = nlargest(num_nlargest_per_fold, predict_dict, key=predict_dict.get)
+
+
+
+                idx_start_nlargest = (step * self.config.batch_size)%num_nlargest_per_fold
+                idx_end_nlargest = idx_start_nlargest + self.config.batch_size
+                # logging.debug('idx_nlargest {}-{}'.format(idx_start_nlargest, idx_end_nlargest))
+
+                if int(step*self.config.batch_size%num_nlargest_per_fold) == 0:
+                    logging.debug('update_prediction')
+                    self.update_prediction(predict_dict, features, labels_gt)
+                    nlargest_index = nlargest(num_nlargest_per_fold, predict_dict, key=predict_dict.get)
+                    # logging.debug('nlargest_index {}'.format(nlargest_index))
+                    # for idx in nlargest_index:
+                    #     logging.debug('idx Loss : {:4} : {:8.6}'.format(idx, predict_dict[idx]))
+
+                nlargest_index_batch = nlargest_index[idx_start_nlargest:idx_end_nlargest]
+                features_batch = features[nlargest_index_batch]
+                labels_gt_batch = labels_gt[nlargest_index_batch]
+
+                _, loss, metrics, summary = self.sess.run([
+                                        self.model.train_op,
+                                        self.model.loss,
+                                        self.model.metrics,
+                                        self.model.summary_op,
+                                        # self.model.summary_pr_op,
+                                        # self.model.tf_print_op
+                                        ],
+                                    feed_dict={
+                                        self.model.features: features_batch,
+                                        self.model.labels: labels_gt_batch
+                                        }
+                                    )
+
+                # start_time = timeit.default_timer()
+                # self.update_prediction(predict_dict, features, labels_gt)
+                # print('start1: {}', timeit.default_timer() - start_time)
+
+                # global_step refer to the number of batches seen by the graph. When it is passed in the
+                # optimizer.minimize() argument list, the variable is increased by one
+                global_step = self.sess.run(tf.train.get_global_step())
+
+                # logging.debug('Epoch:{}, global_step:{}, step:{}, loss:{}, accuracy:{}, metrics:{}'.format(epoch, global_step, step, loss, metrics['accuracy'], metrics))
+                # logging.debug('Epoch:{}, k_fold:{}, global_step:{}, step:{}, loss:{}, accuracy:{}, metrics:{}'.format(epoch, k_fold, global_step, step, loss, metrics['accuracy'], metrics))
+                # logging.debug('Epoch:{}, global_step:{}, k_fold:{}/{}, step:{}/{}, idx:{}-{} loss:{}, accuracy:{}'.format(epoch, global_step, k_fold, k_folds, step, num_steps, idx_start, idx_end, loss, metrics['accuracy']))
+                logging.debug('Epoch:{}, global_step:{}, k_fold:{}/{}, step:{}/{}, idx:{}-{}, idx_nlargest:{}-{}, loss:{:.4}, accuracy:{:.4}'.format(epoch, global_step, k_fold, k_folds, step, num_steps, idx_start, idx_end, idx_start_nlargest, idx_end_nlargest, loss, metrics['accuracy'][0]))
+
+                ## Save checkpoints
+                if (global_step%self.config.train_save_checkpoints_steps) == 0:
+                    self.model.saver.save(
+                            self.sess,
+                            save_path=os.path.join(self.config.checkpoint_dir, 'model_{}.ckpt'.format(global_step))
+                            )
+
+                ## Save summary
+                if (global_step%self.config.train_save_summary_steps) == 0:
+                    self.summary_writer.add_summary(summary, global_step)
+                    # self.summary_writer.add_summary(summary_pr, global_step)
+
+
+
+
+            ## TODO: Handle this case
+            # # For images < batch_size and images which do not fit the last batch
+            # idx_start = iters * batch_size
+            # idx_end = idx_start + (num_images % batch_size)
+            # print('\nidx:[{}-{}]'.format(idx_start, idx_end))
+            # if(num_images % batch_size):
+            #     output_path_mod = os.path.join(output_path, 'record_' + str(iters) + '.tfr')
+            #     self.create_tfrecord(image_paths, labels, idx_start, idx_end, output_path_mod)
+
 
     def train(self):
         epoch = 0
         for epoch in range(self.config.num_epochs):
-            self.run_epoch_train(mode='train', epoch=epoch)
+            # self.run_epoch_train(mode='train', epoch=epoch)
+            self.run_epoch_train_adaptive(mode='train', epoch=epoch)
 
 
     def run_epoch_eval(self, mode, epoch):
