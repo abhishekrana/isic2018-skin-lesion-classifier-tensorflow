@@ -4,15 +4,20 @@
   "model_name": "densenet121",
   "_model_name": "resnet50",
 
-  "labels":{"MEL": 0, "NV": 1, "BCC": 2, "AKIEC": 3, "BKL": 4, "DF": 5, "VASC": 6},
-  "num_classes":7,
+  "_labels":{"MEL": 0, "NV": 1, "BCC": 2, "AKIEC": 3, "BKL": 4, "DF": 5, "VASC": 6},
+  "_num_classes":7,
+
+  "labels":{"MEL": 0, "BCC": 1, "AKIEC": 2, "BKL": 3, "DF": 4, "VASC": 5},
+  "num_classes":6,
 
   "_dataset_path_train": "/media/data/mlmiss2018/datasets/dataset/train_aug_rd_10/",
-  "dataset_path_train": "/media/data/mlmiss2018/datasets/dataset_results_tfr/raw_random_dist_rot",
-  "_dataset_path_train": "datasets/densenet/train",
-  "dataset_path_val": "datasets/densenet/val",
-  "dataset_path_test": "datasets/densenet/test",
-  "dataset_path_train_aug": "datasets/densenet_aug/train",
+  "_dataset_path_train": "/media/data/mlmiss2018/datasets/dataset_results_tfr/raw_random_dist_rot",
+
+  "dataset_path_train": "datasets/densenet_multi/train",
+  "dataset_path_val": "datasets/densenet_multi/val",
+  "dataset_path_test": "datasets/densenet_multi/test",
+
+  "_dataset_path_train_aug": "datasets/densenet_aug/train",
   "dataset_path_image_format": "jpg",
 
   "tfrecords_path_train": "datasets/densenet_tfr/train",

@@ -45,7 +45,7 @@ class TrainerDensenet_2(BaseTrain):
         self.summary_writer = tf.summary.FileWriter(
                                                 os.path.join(self.config.summary_dir, self.config.mode, self.config.mode_ds),
                                                 graph=self.sess.graph, flush_secs=30)
-            
+
 
     def run_epoch_train(self, mode, epoch):
 
@@ -68,20 +68,20 @@ class TrainerDensenet_2(BaseTrain):
             features = features_dict[self.config.model_name + '_input']
 
             _, loss, metrics, summary = self.sess.run([
-                        self.model.train_op, 
-                        self.model.loss, 
+                        self.model.train_op,
+                        self.model.loss,
                         self.model.metrics,
                         self.model.summary_op,
                         # self.model.summary_pr_op,
                         # self.model.tf_print_op
                         ],
                     feed_dict={
-                        self.model.features: features, 
+                        self.model.features: features,
                         self.model.labels: labels_gt
                         }
                     )
 
-            # global_step refer to the number of batches seen by the graph. When it is passed in the 
+            # global_step refer to the number of batches seen by the graph. When it is passed in the
             # optimizer.minimize() argument list, the variable is increased by one
             global_step = self.sess.run(tf.train.get_global_step())
 
@@ -90,7 +90,7 @@ class TrainerDensenet_2(BaseTrain):
             ## Save checkpoints
             if (global_step%self.config.train_save_checkpoints_steps) == 0:
                 self.model.saver.save(
-                        self.sess, 
+                        self.sess,
                         save_path=os.path.join(self.config.checkpoint_dir, 'model_{}.ckpt'.format(global_step))
                         )
 
@@ -131,7 +131,7 @@ class TrainerDensenet_2(BaseTrain):
                         self.model.cross_entropy
                         ],
                     feed_dict={
-                        self.model.features: features_batch, 
+                        self.model.features: features_batch,
                         self.model.labels: labels_gt_batch
                         }
                     )
@@ -285,8 +285,8 @@ class TrainerDensenet_2(BaseTrain):
     def train(self):
         epoch = 0
         for epoch in range(self.config.num_epochs):
-            # self.run_epoch_train(mode='train', epoch=epoch)
-            self.run_epoch_train_adaptive(mode='train', epoch=epoch)
+            self.run_epoch_train(mode='train', epoch=epoch)
+            # self.run_epoch_train_adaptive(mode='train', epoch=epoch)
 
 
     def run_epoch_eval(self, mode, mode_ds, epoch):
@@ -349,21 +349,21 @@ class TrainerDensenet_2(BaseTrain):
             features = features_dict[self.config.model_name + '_input']
 
             loss, metrics, summary, labels_pred_cls = self.sess.run([
-                        self.model.loss, 
+                        self.model.loss,
                         self.model.metrics,
                         self.model.summary_op,
                         self.model.labels_pred_cls
                         # self.model.summary_pr_op,
                         ],
                     feed_dict={
-                        self.model.features: features, 
+                        self.model.features: features,
                         self.model.labels: labels_gt
                         }
                     )
 
             gs_labels_pred += labels_pred_cls.tolist()
 
-            # global_step refer to the number of batches seen by the graph. When it is passed in the 
+            # global_step refer to the number of batches seen by the graph. When it is passed in the
             # optimizer.minimize() argument list, the variable is increased by one
             global_step = self.sess.run(tf.train.get_global_step())
 
@@ -412,7 +412,7 @@ class TrainerDensenet_2(BaseTrain):
                 image_label_dict[row[0]] = np.argmax(label_one_hot_encoding)
 
 
-        
+
         ## Sample n images
         # random.shuffle(images_path)
         images_path = images_path[0:self.config.predict_num_images]
@@ -466,10 +466,10 @@ class TrainerDensenet_2(BaseTrain):
 
             labels_pred_prob_batch, labels_pred_cls_batch = self.sess.run([
                     self.model.labels_pred_prob,
-                    self.model.labels_pred_cls, 
+                    self.model.labels_pred_cls,
                     ],
                 feed_dict={
-                    self.model.features: features[idx_start:idx_end], 
+                    self.model.features: features[idx_start:idx_end],
                     }
                 )
 
@@ -487,10 +487,10 @@ class TrainerDensenet_2(BaseTrain):
         if(num_images % batch_size):
             labels_pred_prob_batch, labels_pred_cls_batch = self.sess.run([
                     self.model.labels_pred_prob,
-                    self.model.labels_pred_cls, 
+                    self.model.labels_pred_cls,
                     ],
                 feed_dict={
-                    self.model.features: features[idx_start:idx_end], 
+                    self.model.features: features[idx_start:idx_end],
                     }
                 )
             logging.debug('labels_gt             {}'.format(labels_gt[idx_start: idx_end]))
