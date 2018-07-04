@@ -43,7 +43,7 @@ class TrainerDensenet_2(BaseTrain):
         super(TrainerDensenet_2, self).__init__(sess, model, data, config,logger)
 
         self.summary_writer = tf.summary.FileWriter(
-                                                os.path.join(self.config.summary_dir, self.config.mode),
+                                                os.path.join(self.config.summary_dir, self.config.mode, self.config.mode_ds),
                                                 graph=self.sess.graph, flush_secs=30)
             
 
@@ -56,9 +56,10 @@ class TrainerDensenet_2(BaseTrain):
 
         data_batch = self.data.input_fn(
                                 file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
-                                mode=mode,
+                                shuffle=True,
+                                buffer_size=self.config.data_gen_buffer_size,
+                                num_repeat=None,                                                    # Infinite repeat
                                 batch_size=self.config.batch_size,
-                                buffer_size=self.config.data_gen_buffer_size
                                 )
 
         for step in range(num_steps):
@@ -172,11 +173,19 @@ class TrainerDensenet_2(BaseTrain):
             # logging.debug('k_fold {}'.format(k_fold))
 
             data_batch = self.data.input_fn(
-                                        file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
-                                        mode=mode,
-                                        batch_size=self.config.num_images_per_fold,
-                                        buffer_size=self.config.data_gen_buffer_size
-                                        )
+                                    file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
+                                    shuffle=True,
+                                    buffer_size=self.config.data_gen_buffer_size,
+                                    num_repeat=1,
+                                    batch_size=self.config.num_images_per_fold,
+                                    )
+
+            # data_batch = self.data.input_fn(
+            #                             file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
+            #                             mode=mode,
+            #                             batch_size=self.config.num_images_per_fold,
+            #                             buffer_size=self.config.data_gen_buffer_size
+            #                             )
             features_dict, labels_gt = self.sess.run(data_batch)
             features = features_dict[self.config.model_name + '_input']
 
@@ -280,20 +289,47 @@ class TrainerDensenet_2(BaseTrain):
             self.run_epoch_train_adaptive(mode='train', epoch=epoch)
 
 
-    def run_epoch_eval(self, mode, epoch):
+    def run_epoch_eval(self, mode, mode_ds, epoch):
 
         assert (mode=='eval')
+        assert (mode_ds=='train_ds' or mode_ds=='val_ds' or mode_ds=='test_ds')
 
         num_steps = int(self.config.debug_val_images_count/self.config.batch_size_eval)
         logging.debug('num_steps {}'.format(num_steps))
 
-        data_batch = self.data.input_fn(
-                                file_pattern=os.path.join(self.config.tfrecords_path_val, '*.tfr'),
-                                mode=mode,
-                                batch_size=self.config.batch_size_eval,
-                                buffer_size=self.config.data_gen_buffer_size
-                                )
-        
+        if mode_ds == 'train_ds':
+            data_batch = self.data.input_fn(
+                                    file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
+                                    shuffle=True,
+                                    buffer_size=self.config.data_gen_buffer_size,
+                                    num_repeat=1,
+                                    num_take=self.config.eval_num_images,
+                                    batch_size=self.config.batch_size_eval,
+                                    )
+            # data_batch = self.data.input_fn(
+            #                         file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
+            #                         mode=mode,
+            #                         mode_ds=mode_ds,
+            #                         batch_size=self.config.batch_size_eval,
+            #                         buffer_size=self.config.data_gen_buffer_size
+            #                         num_repeat=1
+            #                         )
+        elif mode_ds == 'val_ds':
+            data_batch = self.data.input_fn(
+                                    file_pattern=os.path.join(self.config.tfrecords_path_val, '*.tfr'),
+                                    shuffle=True,
+                                    buffer_size=self.config.data_gen_buffer_size,
+                                    num_repeat=1,
+                                    num_take=self.config.eval_num_images,
+                                    batch_size=self.config.batch_size_eval,
+                                    )
+            # data_batch = self.data.input_fn(
+            #                         file_pattern=os.path.join(self.config.tfrecords_path_val, '*.tfr'),
+            #                         mode=mode,
+            #                         batch_size=self.config.batch_size_eval,
+            #                         buffer_size=self.config.data_gen_buffer_size
+            #                         )
+
         gs_labels_gt = []
         gs_labels_pred = []
 
@@ -303,8 +339,9 @@ class TrainerDensenet_2(BaseTrain):
                 features_dict, labels_gt = self.sess.run(data_batch)
             except Exception:
                 logging.debug('Input data stream read completely {}'.format(Exception))
-                # pass
-                return
+                break
+                # return
+
 
             ## labels_gt is one-hot
             gs_labels_gt += np.argmax(labels_gt, axis=1).tolist()
@@ -343,21 +380,21 @@ class TrainerDensenet_2(BaseTrain):
         # self.summary_writer.add_summary(summary_roc, global_step)
 
 
-    def evaluate(self):
+    def evaluate(self, mode_ds='val'):
         epoch = 0
-        self.run_epoch_eval(mode='eval', epoch=epoch)
+        self.run_epoch_eval(mode='eval', mode_ds=mode_ds, epoch=epoch)
 
 
-    def predict(self, dataset_split_name='ds_test'):
+    def predict(self, mode_ds='test_ds'):
 
-        if dataset_split_name == 'ds_train':
+        if mode_ds == 'train_ds':
             image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_train, img_format='jpg')
-        elif dataset_split_name == 'ds_val':
+        elif mode_ds == 'val_ds':
             images_path = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_val, img_format='jpg')
-        elif dataset_split_name == 'ds_test':
+        elif mode_ds == 'test_ds':
             images_path = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_test, img_format='jpg')
         else:
-            logging.error('Unknown dataset_split_name {}', dataset_split_name)
+            logging.error('Unknown mode_ds {}', mode_ds)
             exit(1)
 
 

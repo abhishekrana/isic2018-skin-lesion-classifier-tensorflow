@@ -187,7 +187,8 @@ class DataGeneratorDensenet(BaseData):
 
 
     # def input_fn(self, file_pattern, train, batch_size=32, buffer_size=2048):
-    def input_fn(self, file_pattern, mode, batch_size=32, buffer_size=2048, num_repeat=None):
+    # def input_fn(self, file_pattern, mode, mode_ds='train_ds', batch_size=32, buffer_size=2048, num_repeat=None):
+    def input_fn(self, file_pattern, shuffle=True, buffer_size=2048, num_repeat=None, batch_size=32, num_take=None):
         """
         Args:
             file_pattern:   Path with pattern of TFRecords. Eg: '/home/*.tfr'
@@ -211,22 +212,36 @@ class DataGeneratorDensenet(BaseData):
 
 
         ## TRANSFORM data to prepare for training
-        if mode == 'train':
-            # If training then read a buffer of the given size and randomly shuffle it.
+        if shuffle:
             dataset = dataset.shuffle(buffer_size=buffer_size)
 
-            # Allow infinite reading of the data.
-            num_repeat_mode = None
-        else:
-            # If testing then don't shuffle the data. Only go through the data once.
-            num_repeat_mode = 1
+        # if mode == 'train':
+        #     # If training then read a buffer of the given size and randomly shuffle it.
+        #     dataset = dataset.shuffle(buffer_size=buffer_size)
 
-        if num_repeat != None:
-            num_repeat_mode = num_repeat
+        #     # Allow infinite reading of the data.
+        #     num_repeat_mode = None
+
+        # elif mode == 'eval':
+        #     if mode_ds = 
+        #     # If testing then don't shuffle the data. Only go through the data once.
+        #     num_repeat_mode = 1
+
+        # else:
+        #     logging.error('Unknown mode {}'.format(mode))
+        #     exit(1)
+
+
+        # if num_repeat != None:
+        #     num_repeat_mode = num_repeat
         # logging.debug('num_repeat_mode {}'.format(num_repeat_mode))
 
         # Repeat the dataset the given number of times.
-        dataset = dataset.repeat(num_repeat_mode)
+        # dataset = dataset.repeat(num_repeat_mode)
+        dataset = dataset.repeat(num_repeat)
+
+        if num_take != None:
+            dataset = dataset.take(num_take)
 
         # Parse the serialized data in the TFRecords files.
         # This returns TensorFlow tensors for the image and labels.
@@ -327,6 +342,7 @@ if __name__ == '__main__':
         args={}
         args['config_file'] = 'configs/config_densenet.json'
         args['mode'] = 'train'
+        args['mode_ds'] = 'train_ds'
         args['debug'] = 0
         args = Bunch(args)
         config = process_config(args)

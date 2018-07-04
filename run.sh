@@ -26,29 +26,36 @@ elif [[ $1 -eq 1 ]]; then
 	echo "#  Train  #"
 	echo "###########"
 	# pkill -9 tensorboard
-	rm -rf output/*
+	# rm -rf output/*
 	# tensorboard --logdir=output --port=6004 &
 	# export CUDA_VISIBLE_DEVICES=""
 	if [[ $2 -eq 1 ]]; then
-		python $EXP_FILE -m 'train' -c $CONFIG_FILE -d 1
+		python $EXP_FILE -m 'train' -c $CONFIG_FILE -s 'train_ds' -d 1
 	else
-		python $EXP_FILE -m 'train' -c $CONFIG_FILE -d 0
+		python $EXP_FILE -m 'train' -c $CONFIG_FILE -s 'train_ds' -d 0
 	fi
 
 # Val
 elif [[ $1 -eq 2 ]]; then
-	echo "################"
-	echo "#  Evaluation  #"
-	echo "################"
-	# export CUDA_VISIBLE_DEVICES=""
-	python $EXP_FILE -m 'eval' -c $CONFIG_FILE
+	export CUDA_VISIBLE_DEVICES=""
+	if [[ $2 -eq 0 ]]; then
+		echo "###########################"
+		echo "#  Evaluation - train_ds  #"
+		echo "###########################"
+		python $EXP_FILE -m 'eval' -c $CONFIG_FILE -s 'train_ds'
+	else
+		echo "#########################"
+		echo "#  Evaluation - val_ds  #"
+		echo "#########################"
+		python $EXP_FILE -m 'eval' -c $CONFIG_FILE -s 'val_ds'
+	fi
 
 # Test
 elif [[ $1 -eq 3 ]]; then
 	echo "################"
 	echo "#  Prediction  #"
 	echo "################"
-	# export CUDA_VISIBLE_DEVICES=""
+	export CUDA_VISIBLE_DEVICES=""
 	python $EXP_FILE -m 'predict' -c $CONFIG_FILE
 
 else

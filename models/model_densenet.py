@@ -33,6 +33,7 @@ import utils.utils as utils
 from functools import partial
 import pickle
 
+
 from tensorboard import summary as summary_lib
 
 class ModelDensenet(BaseModel):
@@ -40,8 +41,8 @@ class ModelDensenet(BaseModel):
     def __init__(self, config):
         super(ModelDensenet, self).__init__(config)
 
-        
-    def build_model(self, mode):
+
+    def build_model(self, mode, mode_ds=None):
         """
         mode: train/eval/test
         """
@@ -63,7 +64,7 @@ class ModelDensenet(BaseModel):
         self.labels_pred_cls = tf.argmax(input=self.labels_pred_prob, axis=1)
 
         if (mode=='train') or (mode=='eval'):
-            
+
             # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
             self.cross_entropy = cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=self.labels, logits=self.logits)
 
@@ -71,7 +72,7 @@ class ModelDensenet(BaseModel):
             # weights = tf.gather(class_weights, tf.argmax(self.labels, axis=1))
             # cross_entropy = tf.losses.softmax_cross_entropy(onehot_labels=self.labels, logits=self.logits, weights=weights)
 
-            
+
             ## Loss
             self.loss = tf.reduce_mean(cross_entropy)
             # self.loss = self.weighted_loss(self.logits, self.labels, self.config.num_classes)
@@ -136,6 +137,7 @@ class ModelDensenet(BaseModel):
 
         ## Summaries
         tf.summary.scalar('loss', self.loss)
+        # with tf.name_scope(mode_ds + '/metrics'):
         with tf.name_scope('metrics'):
             for metric_name, metric in self.metrics.items():
                 m_name = metric_name + '//' + metric[0].name.replace(':', '_')
@@ -212,7 +214,7 @@ class ModelDensenet(BaseModel):
         logging.debug('base_model layers count {}'.format(len(base_model.layers)))
 
         scope = 'densenet_121_top/'
-        
+
         x = Flatten()(base_model.output)
 
         fc_layers = [512, 512]
@@ -302,7 +304,7 @@ class ModelDensenet(BaseModel):
 
             return loss
 
-    
+
     def weighted_loss_v2(self, logits, labels, num_classes):
         """
         labels: one hot encoded
@@ -333,7 +335,7 @@ class ModelDensenet(BaseModel):
 
         # def _debug_func(logits, class_weights, weights, unweighted_losses, weighted_losses, loss):
 
-        
+
         def _debug_func(
             logits, labels, num_classes, class_weights, weights, unweighted_losses, weighted_losses, loss
             ):
@@ -349,7 +351,7 @@ class ModelDensenet(BaseModel):
 
     # https://github.com/tkuanlun350/Tensorflow-SegNet/blob/5b52411a16ccafa020d54cf3a87e38b8db9390ae/model.py
     def weighted_loss_v3(self, logits, labels, num_classes):
-        """ median-frequency re-weighting 
+        """ median-frequency re-weighting
         train_labels_node = tf.placeholder(tf.int64, shape=[batch_size, image_h, image_w, 1])
         labels: not one hot
         """
@@ -410,7 +412,7 @@ self.summary_pr_op = summary_lib.pr_curve('precision_recall', predictions=predic
 
 https://wookayin.github.io/tensorflow-talk-debugging/#43
 ## tf.Assert
-tf.Assert(condition, data, summarize=None, name=None) 
+tf.Assert(condition, data, summarize=None, name=None)
 
 # let's ensure that all the outputs in `out` are positive
 assert_op = tf.Assert(tf.reduce_all(out > 0), [out], name='assert_out_positive')
@@ -481,7 +483,7 @@ tf.GraphKeys.BIASES                        tf.GraphKeys.LOCAL_INIT_OP           
 tf.GraphKeys.CONCATENATED_VARIABLES        tf.GraphKeys.LOCAL_RESOURCES               tf.GraphKeys.QUEUE_RUNNERS                 tf.GraphKeys.SUMMARIES                     tf.GraphKeys.VARIABLES
 tf.GraphKeys.COND_CONTEXT                  tf.GraphKeys.LOCAL_VARIABLES               tf.GraphKeys.READY_FOR_LOCAL_INIT_OP       tf.GraphKeys.SUMMARY_OP                    tf.GraphKeys.WEIGHTS
 tf.GraphKeys.EVAL_STEP                     tf.GraphKeys.LOSSES                        tf.GraphKeys.READY_OP                      tf.GraphKeys.TABLE_INITIALIZERS            tf.GraphKeys.WHILE_CONTEXT
-tf.GraphKeys.GLOBAL_STEP                   tf.GraphKeys.METRIC_VARIABLES              tf.GraphKeys.REGULARIZATION_LOSSES         tf.GraphKeys.TRAINABLE_RESOURCE_VARIABLES 
+tf.GraphKeys.GLOBAL_STEP                   tf.GraphKeys.METRIC_VARIABLES              tf.GraphKeys.REGULARIZATION_LOSSES         tf.GraphKeys.TRAINABLE_RESOURCE_VARIABLES
 
 
 >>> tf.get_collection(tf.GraphKeys.LOSSES)

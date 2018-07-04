@@ -39,6 +39,8 @@ def main():
         args={}
         args['config_file'] = 'configs/config_densenet.json'
         args['mode'] = 'predict'
+        args['mode_ds'] = 'train_ds'
+        args['debug'] = 0
         args = Bunch(args)
         config = process_config(args)
 
@@ -57,6 +59,7 @@ def main():
     utils.signal_handler(config)
 
 
+
     ## Set seed values to reproduce results
     random.seed(config.seed)
     np.random.seed(config.seed)
@@ -67,6 +70,7 @@ def main():
     # utils.remove_dirs([os.path.join(config.output_path, config.exp_name)])
     utils.create_dirs([config.summary_dir, config.checkpoint_dir, config.tfrecords_path_train,
                       config.tfrecords_path_val, config.tfrecords_path_test])
+
 
     ## Save code
     utils.save_code(config)
@@ -83,8 +87,11 @@ def main():
 
     ## Configure GPU
     sess_config = tf.ConfigProto()
+
+
     sess_config.gpu_options.allow_growth=True
-    gpu_train_fraction = 0.7
+    # gpu_train_fraction = 0.7
+    gpu_train_fraction = 1.0
     if config.mode == 'train':
         sess_config.gpu_options.per_process_gpu_memory_fraction = gpu_train_fraction
     else:
@@ -101,7 +108,7 @@ def main():
 
     ## Print updated configuration
     logging.debug('\nConfiguration: \n{}'.format(config))
-    
+
     # sess=''
     logger=''
     ## Create TF Records
@@ -121,9 +128,9 @@ def main():
 
     ## Create model
     model = ModelDensenet(config)
-    model.build_model(config.mode)
+    model.build_model(mode=config.mode, mode_ds=config.mode_ds)
 
-    
+
     with tf.Session(config=sess_config) as sess:
 
         if config.debug == '1':
@@ -144,15 +151,11 @@ def main():
 
         sess.run(tf.local_variables_initializer())
 
-        # file_pattern=os.path.join(config.tfrecords_path_train, '*.tfr'),
-        # filenames_op = tf.data.Dataset.list_files(file_pattern)
-        # # filenames = sess.run(filenames_op)
-        # logging.debug('filenames {}'.format(y))
 
         ## Create Trainer
         # trainer = TrainerDensenet(sess, model, data, config, logger)
         trainer = TrainerDensenet_2(sess, model, data, config, logger)
-        
+
 
         ## TRAINING
         if (config.mode == 'train'):
@@ -181,14 +184,18 @@ def main():
                 last_checkpoint = latest_checkpoint
                 model.saver.restore(sess, latest_checkpoint)
 
-                trainer.evaluate()
+                if (config.mode_ds == 'train_ds'):
+                    trainer.evaluate(mode_ds='train_ds')
+                elif (config.mode_ds == 'val_ds'):
+                    trainer.evaluate(mode_ds='val_ds')
 
 
         ## PREDICTION
         elif (config.mode == 'predict'):
-            # trainer.predict(dataset_split_name='ds_train')
-            trainer.predict(dataset_split_name='ds_val')
-            trainer.predict(dataset_split_name='ds_test')
+            # trainer.predict(mode_ds='train_ds')
+            # trainer.predict(mode_ds='val_ds')
+            trainer.predict(mode_ds='test_ds')
+
 
 
         else:

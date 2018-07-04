@@ -54,6 +54,11 @@ def get_args():
         default='None',
         help='tfr/train/eval/test')
     argparser.add_argument(
+        '-s', '--mode_ds',
+        metavar='S',
+        default='None',
+        help='Dataset [0:train_ds, 1:val_ds]')
+    argparser.add_argument(
         '-d', '--debug',
         metavar='D',
         default='None',
@@ -245,13 +250,20 @@ def set_config_class_weights(config, data):
         class_weights =  np.array([ 1.2755102,   0.21409838,  2.72108844,  4.53514739,  1.29282482, 12.84109149, 9.44510035])
     else:
         # filenames = tf.data.Dataset.list_files(os.path.join(config.tfrecords_path_train, '*.tfr'))
-        data_train_op = data.input_fn(
-                                file_pattern=os.path.join(config.tfrecords_path_train, '*.tfr'),
-                                mode='train', 
-                                batch_size=config.debug_train_images_count, 
-                                buffer_size=config.data_gen_buffer_size,
-                                num_repeat = 1
+        data_batch = self.data.input_fn(
+                                file_pattern=os.path.join(self.config.tfrecords_path_train, '*.tfr'),
+                                shuffle=False,
+                                buffer_size=self.config.data_gen_buffer_size,
+                                num_repeat=1,
+                                batch_size=self.config.debug_train_images_count,
                                 )
+        # data_train_op = data.input_fn(
+        #                         file_pattern=os.path.join(config.tfrecords_path_train, '*.tfr'),
+        #                         mode='train', 
+        #                         batch_size=config.debug_train_images_count, 
+        #                         buffer_size=config.data_gen_buffer_size,
+        #                         num_repeat = 1
+        #                         )
 
         with tf.Session() as sess:
             data_train = sess.run(data_train_op)

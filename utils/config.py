@@ -27,8 +27,9 @@ def process_config(args):
     json_file = args.config_file
     config = get_config_from_json(json_file)
 
-    config.mode = args.mode
     config.config_file = args.config_file
+    config.mode = args.mode
+    config.mode_ds = args.mode_ds
     config.debug = args.debug
     config.summary_dir = os.path.join(config.output_path, config.exp_name, "summary/")
     config.checkpoint_dir = os.path.join(config.output_path, config.exp_name, "checkpoints/")
