@@ -52,11 +52,18 @@ elif [[ $1 -eq 2 ]]; then
 
 # Test
 elif [[ $1 -eq 3 ]]; then
-	echo "################"
-	echo "#  Prediction  #"
-	echo "################"
 	export CUDA_VISIBLE_DEVICES=""
-	python $EXP_FILE -m 'predict' -c $CONFIG_FILE
+	if [[ $2 -eq 1 ]]; then
+		echo "#######################"
+		echo "#  Prediction Cascade #"
+		echo "#######################"
+		python $EXP_FILE -m 'predict' -c $CONFIG_FILE -b 1
+	else
+		echo "################"
+		echo "#  Prediction  #"
+		echo "################"
+		python $EXP_FILE -m 'predict' -c $CONFIG_FILE -b 0
+	fi
 
 else
 	echo "ERROR: Unknown argument given."

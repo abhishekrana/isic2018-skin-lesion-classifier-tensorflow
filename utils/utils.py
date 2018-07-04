@@ -59,6 +59,11 @@ def get_args():
         default='None',
         help='Dataset [0:train_ds, 1:val_ds]')
     argparser.add_argument(
+        '-b', '--cascade',
+        metavar='B',
+        default='None',
+        help='Cascade mode for prediction [0:No cascade, 1:Cascade]')
+    argparser.add_argument(
         '-d', '--debug',
         metavar='D',
         default='None',
@@ -259,8 +264,8 @@ def set_config_class_weights(config, data):
                                 )
         # data_train_op = data.input_fn(
         #                         file_pattern=os.path.join(config.tfrecords_path_train, '*.tfr'),
-        #                         mode='train', 
-        #                         batch_size=config.debug_train_images_count, 
+        #                         mode='train',
+        #                         batch_size=config.debug_train_images_count,
         #                         buffer_size=config.data_gen_buffer_size,
         #                         num_repeat = 1
         #                         )
@@ -314,9 +319,9 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     plt.ylabel('Predicted label')
 
 
-def get_confusion_matrix(config, gt_labels, pred_labels, dataset_split_name):
+def get_confusion_matrix(config, gt_labels, pred_labels, mode_ds):
 
-    plot_path = os.path.join(config.output_path, config.exp_name, 'plots', dataset_split_name)
+    plot_path = os.path.join(config.output_path, config.exp_name, config.exp_cascade_name, 'plots', mode_ds)
     os.makedirs(plot_path, exist_ok=True)
 
     class_names = []
@@ -357,7 +362,7 @@ def get_files_from_pattern(file_path_pattern):
 
 
 def summary_confusion_matrix(config, correct_labels, predict_labels, labels, title='Confusion matrix', tensor_name = 'MyFigure/image', normalize=False):
-    ''' 
+    '''
     Parameters:
         correct_labels                  : These are your true classification categories.
         predict_labels                  : These are you predicted classification categories
@@ -366,10 +371,10 @@ def summary_confusion_matrix(config, correct_labels, predict_labels, labels, tit
         tensor_name = 'MyFigure/image'  : Name for the output summay tensor
 
     Returns:
-        summary: TensorFlow summary 
+        summary: TensorFlow summary
 
     Other itema to note:
-        - Depending on the number of category and the data , you may have to modify the figzie, font sizes etc. 
+        - Depending on the number of category and the data , you may have to modify the figzie, font sizes etc.
         - Currently, some of the ticks dont line up due to rotations.
     '''
 
@@ -416,7 +421,7 @@ def summary_confusion_matrix(config, correct_labels, predict_labels, labels, tit
         ax.text(j, i, format(cm[i, j], 'd') if cm[i,j]!=0 else '.', horizontalalignment="center", fontsize=6, verticalalignment='center', color= "black")
     fig.set_tight_layout(True)
     summary = tfplot.figure.to_summary(fig, tag=tensor_name)
-    
+
     return summary
 
 
@@ -451,21 +456,21 @@ def summary_roc(config, correct_labels, predict_labels, labels, title='Confusion
 
     classes = np.unique(np.array(y_true))
     for cls in classes:
-        
+
         print('Class:', cls)
 
         y_true_class = [1 if x==cls else 0 for x in y_true]
         print(y_true_class)
-        
+
         y_pred_class = [1 if x==cls else 0 for x in y_pred]
         print(y_pred_class)
-        
+
         # plot_roc(y_pred_class, y_true_class, pos_label=None)
         fpr, tpr, _ = roc_curve(y_true_class, y_pred_class)
         roc_auc = auc(fpr, tpr)
 
 
-        
+
         #metric_confusion_matrix(y_true, y_pred, class_names)
         # metric_confusion_matrix(y_true_class, y_pred_class, [class_names[cls]] + ['rest'])
 
@@ -509,7 +514,7 @@ def summary_roc(config, correct_labels, predict_labels, labels, title='Confusion
         #     ax.text(j, i, format(cm[i, j], 'd') if cm[i,j]!=0 else '.', horizontalalignment="center", fontsize=6, verticalalignment='center', color= "black")
         fig.set_tight_layout(True)
         summary = tfplot.figure.to_summary(fig, tag=tensor_name)
-        
+
         return summary
 
 def summary_pr_fscore(config, correct_labels, predict_labels, labels):
@@ -556,7 +561,7 @@ def debug_tf(output, *args):
 
     return output
 
-def get_metrics(config, gt_labels, pred_labels, dataset_split_name):
+def get_metrics(config, gt_labels, pred_labels, mode_ds):
     """
     """
     class_names = []
@@ -584,41 +589,41 @@ def get_metrics(config, gt_labels, pred_labels, dataset_split_name):
         NPV = 0.0
         F1 = 0.0
         accuracy = 0.0
-        
+
         # Power
         TP = cnf_matrix[idx, idx]
         accuracy_2.append(TP)
-        
+
         # Type I Error
         FP = np.sum(cnf_matrix[idx, :]) - TP
-        
+
         # Type II Error
         FN = np.sum(cnf_matrix[:, idx]) - TP
-        
+
         TN = np.sum(cnf_matrix) - TP - FP - FN
-        
+
         # PPV/Precision
         if TP != 0:
             PPV = TP/(TP+FP)
-        
+
         # TPR/Recall/Sensitivity
         if TP != 0:
             TPR = TP/(TP+FN)
-        
+
         # TNR/Specificity
         if TN != 0:
             TNR = TN/(TN+FP)
-        
+
         if TN != 0:
             NPV = TN/(TN+FN)
-        
+
 
         if (TP + TN) != 0:
             accuracy = (TP + TN)/(TP + TN + FP + FN)
-        
+
         if TP != 0:
             F1 = (2*TP)/((2*TP) + FP + FN)
-        
+
         # print('\nClass{}: {}'.format(idx, class_names[idx]))
         # print('TP:{}, FP:{}, FN:{}, TN:{}'.format(TP, FP, FN, TN))
         # print('PPV/Precision:{:13}'.format(np.round(PPV, round_val)))
@@ -629,8 +634,8 @@ def get_metrics(config, gt_labels, pred_labels, dataset_split_name):
         # print('F1:{:26}'.format(np.round(F1, round_val)))
         # print('True Samples:{:14}'.format(TP+FN))
 
-        metrics.append([class_names[idx], TP, FP, FN, TN, np.round(PPV, round_val), np.round(TPR, round_val), 
-            np.round(TNR, round_val), np.round(NPV, round_val), np.round(accuracy, round_val), 
+        metrics.append([class_names[idx], TP, FP, FN, TN, np.round(PPV, round_val), np.round(TPR, round_val),
+            np.round(TNR, round_val), np.round(NPV, round_val), np.round(accuracy, round_val),
             np.round(F1, round_val), (TP+FN)])
 
     print('PPV/Precision, TPR/Recall/Sensitivity, TNR/Specificity, ACC:Accuracy, TS:TrueSamples\n')
@@ -641,7 +646,7 @@ def get_metrics(config, gt_labels, pred_labels, dataset_split_name):
     print('Accuracy_2 [TP/Total]:{}'.format(np.sum(accuracy_2)/np.sum(cnf_matrix)) )
 
     threshold = 0.5
-    plot_path = os.path.join(config.output_path, config.exp_name, 'plots', dataset_split_name)
+    plot_path = os.path.join(config.output_path, config.exp_name, config.exp_cascade_name, 'plots', mode_ds)
     img_path_name = os.path.join(plot_path, 'metrics_threshold_' + str(threshold) + '.jpg')
     logging.debug('img_path_name {}'.format(img_path_name))
     os.makedirs(plot_path, exist_ok=True)
@@ -684,11 +689,11 @@ def adjusted_classes(prob, threshold=0.5):
     return [1 if y >= t else 0 for y in prob]
 
 
-def gen_precision_recall_curve(config, labels_gt, labels_prob, dataset_split_name):
-    
-    
+def gen_precision_recall_curve(config, labels_gt, labels_prob, mode_ds):
+
+
     labels_map_inv = {v: k for k, v in config.labels.items()}
-    plot_path = os.path.join(config.output_path, config.exp_name, 'plots', dataset_split_name)
+    plot_path = os.path.join(config.output_path, config.exp_name, config.exp_cascade_name, 'plots', mode_ds)
     os.makedirs(plot_path, exist_ok=True)
 
     for class_idx in range(config.num_classes):
@@ -718,7 +723,7 @@ def gen_precision_recall_curve(config, labels_gt, labels_prob, dataset_split_nam
         plt.close()
 
 
-def gen_roc_curve(config, labels_gt, labels_prob, dataset_split_name):
+def gen_roc_curve(config, labels_gt, labels_prob, mode_ds):
 
     labels_gt_one_hot = label_binarize(labels_gt, classes=np.arange(config.num_classes))
     y_score = np.array(labels_prob)
@@ -730,7 +735,7 @@ def gen_roc_curve(config, labels_gt, labels_prob, dataset_split_name):
     roc_auc = dict()
     labels_map_inv = {v: k for k, v in config.labels.items()}
 
-    plot_path = os.path.join(config.output_path, config.exp_name, 'plots', dataset_split_name)
+    plot_path = os.path.join(config.output_path, config.exp_name, config.exp_cascade_name, 'plots', mode_ds)
     os.makedirs(plot_path, exist_ok=True)
 
     for i in range(config.num_classes):

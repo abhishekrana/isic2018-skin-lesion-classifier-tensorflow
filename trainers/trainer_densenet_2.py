@@ -25,6 +25,7 @@ import cv2
 from PIL import Image, ImageOps
 from heapq import nlargest
 import timeit
+import pickle
 
 from data_handler.data_generator_densenet import DataGeneratorDensenet
 from data_handler.tfrecords_densenet import TFRecordsDensenet
@@ -385,7 +386,7 @@ class TrainerDensenet_2(BaseTrain):
         self.run_epoch_eval(mode='eval', mode_ds=mode_ds, epoch=epoch)
 
 
-    def predict(self, mode_ds='test_ds'):
+    def predict(self, mode_ds='test_ds', mixed=False):
 
         if mode_ds == 'train_ds':
             image_paths = utils_image.get_images_path_list_from_dir(self.config.tfrecords_path_train, img_format='jpg')
@@ -401,7 +402,6 @@ class TrainerDensenet_2(BaseTrain):
         ## Get image-label mapping
         image_label_dict = {}
         dataset_labels_file_path = 'datasets/densenet/ISIC2018_Task3_Training_GroundTruth.csv'
-        # dataset_labels_file_path = 'ISIC2018_Task3_Training_GroundTruth.csv'
         with open(dataset_labels_file_path) as csvfile:
             read_csv = csv.reader(csvfile, delimiter=',')
             for index, row in enumerate(read_csv):
@@ -505,13 +505,25 @@ class TrainerDensenet_2(BaseTrain):
             print('GT, PRED: [{}, {}]'.format(label_gt, label_pred_cls))
 
 
-        ### ANALYAIS ###
+
+        pkl_path = os.path.join(self.config.output_path, self.config.exp_name , self.config.exp_cascade_name, 'pkl')
+        os.makedirs(pkl_path, exist_ok=True);
+
+        with open(os.path.join(pkl_path, 'labels_gt.pkl' ), 'wb') as handle:
+            pickle.dump(labels_gt, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(os.path.join(pkl_path, 'labels_pred_prob.pkl' ), 'wb') as handle:
+            pickle.dump(labels_pred_prob, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(os.path.join(pkl_path, 'labels_pred_cls.pkl' ), 'wb') as handle:
+            pickle.dump(labels_pred_cls, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+        ### ANALYSIS ###
 
         ## Plot ROC curve
-        utils.gen_roc_curve(self.config, labels_gt, labels_pred_prob, dataset_split_name)
+        utils.gen_roc_curve(self.config, labels_gt, labels_pred_prob, mode_ds)
 
         ## Plot PR Curve
-        utils.gen_precision_recall_curve(self.config, labels_pred_cls, labels_pred_prob, dataset_split_name)
+        utils.gen_precision_recall_curve(self.config, labels_pred_cls, labels_pred_prob, mode_ds)
 
         ## Confusion matrix
         # confusion = tf.confusion_matrix(labels=labels_gt, predictions=labels_pred_cls, num_classes=self.config.num_classes)
@@ -521,13 +533,93 @@ class TrainerDensenet_2(BaseTrain):
 
 
         ## Plot and save confusion matrix
-        utils.get_confusion_matrix(self.config, labels_gt, labels_pred_cls, dataset_split_name)
+        utils.get_confusion_matrix(self.config, labels_gt, labels_pred_cls, mode_ds)
 
         ## Print PR and F1
         utils.summary_pr_fscore(self.config, labels_gt, labels_pred_cls, self.config.labels)
 
         ## Plot Metrics
-        utils.get_metrics(self.config, labels_gt, labels_pred_cls, dataset_split_name)
+        utils.get_metrics(self.config, labels_gt, labels_pred_cls, mode_ds)
+
+
+
+    def predict_cascade(self, mode_ds='test_ds'):
+
+        # TODO: Hardcoding
+        labels_binary={"REST": 0, "NV": 1}
+        labels_multi6={"MEL": 0, "NV": 1, "BCC": 2, "AKIEC": 3, "BKL": 4, "DF": 5, "VASC": 6}
+        labels_binary_inv = {v: k for k, v in labels_binary.items()}
+        labels_multi6_inv = {v: k for k, v in labels_multi6.items()}
+
+        print('aaa')
+        self.config.exp_cascade_name = 'binary'
+        pkl_path = os.path.join(self.config.output_path, self.config.exp_name , self.config.exp_cascade_name, 'pkl')
+        with open(os.path.join(pkl_path, 'labels_gt.pkl' ), 'rb') as handle:
+            labels_gt_binary = pickle.load(handle)
+        with open(os.path.join(pkl_path, 'labels_pred_prob.pkl' ), 'rb') as handle:
+            labels_pred_prob_binary = pickle.load(handle)
+        with open(os.path.join(pkl_path, 'labels_pred_cls.pkl' ), 'rb') as handle:
+            labels_pred_cls_binary = pickle.load(handle)
+
+
+        self.config.exp_cascade_name = 'multi6'
+        pkl_path = os.path.join(self.config.output_path, self.config.exp_name , self.config.exp_cascade_name, 'pkl')
+        with open(os.path.join(pkl_path, 'labels_gt.pkl' ), 'rb') as handle:
+            labels_gt_multi6 = pickle.load(handle)
+        with open(os.path.join(pkl_path, 'labels_pred_prob.pkl' ), 'rb') as handle:
+            labels_pred_prob_multi6 = pickle.load(handle)
+        with open(os.path.join(pkl_path, 'labels_pred_cls.pkl' ), 'rb') as handle:
+            labels_pred_cls_multi6 = pickle.load(handle)
+
+
+
+        labels_pred_prob=[]
+        labels_pred_cls=[]
+        labels_gt = labels_gt_binary
+
+        # for lgb, lpb, lcb, lgm, lpm, lcm in zip(labels_gt_binary, labels_pred_prob_binary, labels_pred_cls_binary, labels_gt_multi6, labels_pred_prob_multi6, labels_pred_cls_multi6):
+
+        for i in range(len(labels_gt_binary)):
+            # binary
+            #if (labels_pred_cls_binary[i] == labels_binary['NV']) and (np.max(labels_pred_prob_binary[i]) > 0.5):
+            if (labels_pred_cls_binary[i] == labels_binary['NV']):
+                labels_pred_cls.append(labels_pred_cls_binary[i])
+
+                prob = 7*[labels_pred_prob_binary[i][labels_binary['REST']]/6.0]
+                prob[labels_binary['NV']] = labels_pred_prob_binary[i][labels_binary['NV']]
+                labels_pred_prob.append(prob)
+                #labels_pred_prob.append(np.max(labels_pred_prob_binary[i]))
+
+            # multi6
+            else:
+                labels_pred_cls.append(labels_pred_cls_multi6[i])
+                labels_pred_prob.append(labels_pred_prob_multi6[i])
+
+
+
+        ## Plot ROC curve
+        #utils.gen_roc_curve(self.config, labels_gt, labels_pred_prob, mode_ds)
+
+        ## Plot PR Curve
+        utils.gen_precision_recall_curve(self.config, labels_pred_cls, labels_pred_prob, mode_ds)
+
+        ## Confusion matrix
+        # confusion = tf.confusion_matrix(labels=labels_gt, predictions=labels_pred_cls, num_classes=self.config.num_classes)
+        # logging.debug('Row(GT), Col(Pred)')
+        # with tf.Session() as sess:
+        #     print(sess.run(confusion))
+
+
+        ## Plot and save confusion matrix
+        utils.get_confusion_matrix(self.config, labels_gt, labels_pred_cls, mode_ds)
+
+        ## Print PR and F1
+        utils.summary_pr_fscore(self.config, labels_gt, labels_pred_cls, self.config.labels)
+
+        ## Plot Metrics
+        utils.get_metrics(self.config, labels_gt, labels_pred_cls, mode_ds)
+
+
 
 
 

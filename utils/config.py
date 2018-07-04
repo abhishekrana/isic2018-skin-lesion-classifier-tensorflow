@@ -30,6 +30,7 @@ def process_config(args):
     config.config_file = args.config_file
     config.mode = args.mode
     config.mode_ds = args.mode_ds
+    config.cascade = args.cascade
     config.debug = args.debug
     config.summary_dir = os.path.join(config.output_path, config.exp_name, "summary/")
     config.checkpoint_dir = os.path.join(config.output_path, config.exp_name, "checkpoints/")

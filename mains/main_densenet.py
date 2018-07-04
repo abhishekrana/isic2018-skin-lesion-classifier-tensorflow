@@ -11,6 +11,7 @@ import logging
 logging.getLogger('parso.python.diff').setLevel('INFO')
 import datetime
 from bunch import Bunch
+import pudb
 
 import tensorflow as tf
 import tensorflow.contrib.eager as tfe
@@ -125,7 +126,6 @@ def main():
     # utils.set_config_class_weights(config, data)
 
 
-
     ## Create model
     model = ModelDensenet(config)
     model.build_model(mode=config.mode, mode_ds=config.mode_ds)
@@ -191,12 +191,15 @@ def main():
 
 
         ## PREDICTION
-        elif (config.mode == 'predict'):
-            # trainer.predict(mode_ds='train_ds')
-            # trainer.predict(mode_ds='val_ds')
-            trainer.predict(mode_ds='test_ds')
+        if (config.mode == 'predict'):
+            if(config.cascade == '0'):
+                # trainer.predict(mode_ds='train_ds')
+                # trainer.predict(mode_ds='val_ds')
+                trainer.predict(mode_ds='test_ds')
 
-
+            ## PREDICTION CASCADE MODELS
+            elif(config.cascade == '1'):
+                trainer.predict_cascade(mode_ds='test_ds')
 
         else:
             logging.debug("ERROR: Unknown mode")

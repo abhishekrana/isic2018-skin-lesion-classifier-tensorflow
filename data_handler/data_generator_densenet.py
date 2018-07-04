@@ -38,7 +38,7 @@ class DataGeneratorDensenet(BaseData):
 
         ## Densenet specific
         # TODO: _aSk As per test_inference.py, trained weights look like to be in BGR format. Verify this.
-        ## Subtract mean pixel and multiple by scaling constant 
+        ## Subtract mean pixel and multiple by scaling constant
         # https://github.com/flyyufelix/DenseNet-Keras/blob/master/test_inference.py
         # https://github.com/shicai/DenseNet-Caffe
         # Convert RGB to BGR
@@ -223,7 +223,7 @@ class DataGeneratorDensenet(BaseData):
         #     num_repeat_mode = None
 
         # elif mode == 'eval':
-        #     if mode_ds = 
+        #     if mode_ds =
         #     # If testing then don't shuffle the data. Only go through the data once.
         #     num_repeat_mode = 1
 
@@ -286,7 +286,7 @@ class DataGeneratorDensenet(BaseData):
         # logging.debug('images_batch {}'.format(images_batch))
 
         # Preprocess image
-        # data_preprocessing_fn = lambda x: self.data_preprocessing(x) 
+        # data_preprocessing_fn = lambda x: self.data_preprocessing(x)
         # images_batch = tf.map_fn(data_preprocessing_fn, images_batch)
         # # images_batch = tf.map_fn(fn=lambda x: self.data_preprocessing(x), images_batch)
         # print('images_batch', images_batch)
@@ -348,7 +348,7 @@ if __name__ == '__main__':
         config = process_config(args)
 
     # Initialize Logger
-    utils.logger_init(config, logging.DEBUG) 
+    utils.logger_init(config, logging.DEBUG)
 
 
     filenames_regex = os.path.join(config.tfrecords_path_train, '*.tfr')

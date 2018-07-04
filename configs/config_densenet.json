@@ -4,25 +4,48 @@
   "model_name": "densenet121",
   "_model_name": "resnet50",
 
+
+  "_exp_cascade_name": "",
   "_labels":{"MEL": 0, "NV": 1, "BCC": 2, "AKIEC": 3, "BKL": 4, "DF": 5, "VASC": 6},
   "_num_classes":7,
-
-  "labels":{"MEL": 0, "BCC": 1, "AKIEC": 2, "BKL": 3, "DF": 4, "VASC": 5},
-  "num_classes":6,
-
-  "_dataset_path_train": "/media/data/mlmiss2018/datasets/dataset/train_aug_rd_10/",
   "_dataset_path_train": "/media/data/mlmiss2018/datasets/dataset_results_tfr/raw_random_dist_rot",
+  "_tfrecords_path_train": "datasets/densenet_tfr/train",
+  "_tfrecords_path_val": "datasets/densenet_tfr/val",
+  "_tfrecords_path_test": "datasets/densenet_tfr/test",
+  "_pre_trained_model": "",
 
-  "dataset_path_train": "datasets/densenet_multi/train",
-  "dataset_path_val": "datasets/densenet_multi/val",
-  "dataset_path_test": "datasets/densenet_multi/test",
 
-  "_dataset_path_train_aug": "datasets/densenet_aug/train",
+  "exp_cascade_name": "multi6",
+  "labels":{"MEL": 0, "NV": 1, "BCC": 2, "AKIEC": 3, "BKL": 4, "DF": 5, "VASC": 6},
+  "num_classes":7,
+  "dataset_path_train": "datasets/densenet_multi6/train",
+  "tfrecords_path_train": "datasets/densenet_multi6_tfr/train",
+  "dataset_path_val": "datasets/densenet_multi6/val",
+  "tfrecords_path_val": "datasets/densenet_multi6_tfr/val",
+  "dataset_path_test": "datasets/densenet_orig/test",
+  "tfrecords_path_test": "datasets/densenet_orig_tfr/test",
+  "_dataset_path_test": "datasets/densenet_multi6/test",
+  "_tfrecords_path_test": "datasets/densenet_multi6_tfr/test",
+  "pre_trained_model": "/media/data/mlmiss2018/Results_Densenet/2018-07-04-15_33_12_output/densenet/checkpoints/model_6000.ckpt",
+
+
+  "_exp_cascade_name": "binary",
+  "_labels":{"REST": 0, "NV": 1},
+  "_num_classes":2,
+  "_dataset_path_train": "datasets/densenet_binary/train",
+  "_tfrecords_path_train": "datasets/densenet_binary_tfr/train",
+  "_dataset_path_val": "datasets/densenet_binary/val",
+  "_tfrecords_path_val": "datasets/densenet_binary_tfr/val",
+  "__dataset_path_test": "datasets/densenet_orig/test",
+  "__tfrecords_path_test": "datasets/densenet_orig_tfr/test",
+  "_dataset_path_test": "datasets/densenet_binary/test",
+  "_tfrecords_path_test": "datasets/densenet_binary_tfr/test",
+  "_pre_trained_model": "/media/data/mlmiss2018/Results_Densenet/2018-07-04-14_34_23_output/densenet/checkpoints/model_6250.ckpt",
+
+
+  "dataset_path_train_aug": "datasets/densenet_aug/train",
   "dataset_path_image_format": "jpg",
 
-  "tfrecords_path_train": "datasets/densenet_tfr/train",
-  "tfrecords_path_val": "datasets/densenet_tfr/val",
-  "tfrecords_path_test": "datasets/densenet_tfr/test",
 
   "tfr_image_width":224,
   "tfr_image_height":224,
@@ -47,10 +70,10 @@
   "learning_rate": 1e-5,
   "momentum": 0.9,
   "train_max_steps":10000,
-  "_train_save_summary_steps": 500,
-  "train_save_summary_steps": 250,
-  "_train_save_checkpoints_steps": 500,
-  "train_save_checkpoints_steps": 250,
+  "_train_save_summary_steps": 250,
+  "_train_save_checkpoints_steps": 250,
+  "train_save_checkpoints_steps": 500,
+  "train_save_summary_steps": 500,
   "train_keep_checkpoint_max":5,
 
   "debug": 0,
@@ -62,8 +85,6 @@
   "debug_test_images_count": 1000,
   "seed": 7,
 
-  "_pre_trained_model": "output/densenet/checkpoints/model.ckpt-8452",
-  "pre_trained_model": "",
 
   "eval_num_images": 500,
   "predict_num_images": 1000,
